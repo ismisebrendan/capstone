@@ -1,0 +1,23 @@
+Data output from Spectrum object.
+
+data structure: [[1st iteration], [2nd iteration], ... [Input values], [Number of iterations],[this file]]
+
+
+Iteration data structure
+0  As_in
+1  As_out
+2  As_unc_out
+3  AoNs
+4  AoNs_out
+5  AoNs_unc_out
+6  lams_in
+7  lams_out
+8  lams_unc_out
+9  sigs_in
+10 sigs_out
+11 sigs_unc_out
+12 vels_in
+13 vels_out
+14 vels_unc_out
+15 peaks_no
+16 Nsim
