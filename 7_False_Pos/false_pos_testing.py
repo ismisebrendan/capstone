@@ -10,7 +10,7 @@ from tensorflow.keras.models import Sequential
 ANN = 'false_pos.keras'
 file = 'false_pos-testing.txt'
 
-test_data = np.loadtxt(file)
+test_data = np.loadtxt(file)[:,:-1]
 
 model = tf.keras.models.load_model(ANN)
 
@@ -40,5 +40,5 @@ plt.hist(YPred[np.where(YPred > 0.8)[0]], bins = hbin, density = False, label = 
 plt.xlabel("Predicted likelyhood of being a PNE/ Emission by network")
 plt.ylabel("Number of spectra")
 plt.title(ANN+" trained network predicting "+test_name)
-plt.yscale('log')
+# plt.yscale('log')
 plt.show()

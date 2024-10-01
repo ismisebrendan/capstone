@@ -11,7 +11,7 @@ from tensorflow.keras.models import Sequential
 # Import data
 file = "false_pos-20240930T161616.txt"
 
-training_data = np.loadtxt(file, skiprows = 1)
+training_data = np.loadtxt(file)
 
 # Using same settings as Andrew
 # Create the Network using the Keras 
