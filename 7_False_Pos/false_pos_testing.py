@@ -10,7 +10,7 @@ from tensorflow.keras.models import Sequential
 ANN = 'false_pos.keras'
 file = 'false_pos-testing.txt'
 
-test_data = np.loadtxt(file)[:,:-1]
+test_data = np.loadtxt(file)
 
 model = tf.keras.models.load_model(ANN)
 
@@ -23,10 +23,16 @@ predicted_data = np.hstack((test_data, YPred))
 
 np.savetxt("Predicted.dat", predicted_data)
 
+
+#Highlight known PNEs
+known = np.where(test_data[:,6] == 1)
+unknown = np.where(test_data[:,6] != 1)
+
+
 #save the tested data
 filepath = os.path.splitext(file)[0]
 # longname = filepath.split("/")[1]
-test_name = filepath.split("_")[0]
+test_name = filepath.split("-")[0]
 
 
 #Highlighting potential missed PNEs
