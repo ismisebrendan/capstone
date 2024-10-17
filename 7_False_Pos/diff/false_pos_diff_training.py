@@ -9,7 +9,7 @@ from tensorflow.keras.models import Sequential
 
 
 # Import data
-file = "false_data1.txt"
+file = "false_diff2.txt"
 
 training_data = np.loadtxt(file)
 
@@ -22,8 +22,8 @@ training_data = np.loadtxt(file)
 model = Sequential()
 model.add(Dense(8, activation = "tanh", kernel_initializer='random_normal'))
 #Adding hidden layers
-model.add(Dense(114, activation = "tanh", kernel_initializer='random_normal'))
-model.add(Dense(76, activation = "tanh", kernel_initializer='random_normal'))
+model.add(Dense(1708, activation = "tanh", kernel_initializer='random_normal'))
+model.add(Dense(240, activation = "tanh", kernel_initializer='random_normal'))
 #Adding output layer
 model.add(Dense(8, activation = "sigmoid", kernel_initializer='random_normal'))
 model.compile(loss = "mean_squared_error", optimizer='adam', metrics=['accuracy'])

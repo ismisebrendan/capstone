@@ -7,8 +7,8 @@ import tensorflow as tf
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
-ANN = 'false_data1_1.keras'
-file = 'false_data1.txt'
+ANN = 'false_diff0_2.keras'
+file = 'false_diff1.txt'
 
 data = np.loadtxt(file)
 
@@ -94,7 +94,7 @@ plt.xlabel('Is the line detected?')
 plt.ylabel('Is the line present?')
 plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN}')
 plt.text(0, 0, confusion[0][0], ha='center', backgroundcolor='w')
-plt.text(0, 1, confusion[0][1], ha='center', backgroundcolor='w')
+plt.text(0, 1, confusion[0][1], ha='center', backgroundcolor='yellow')
 plt.text(1, 0, confusion[1][0], ha='center', backgroundcolor='w')
 plt.text(1, 1, confusion[1][1], ha='center', backgroundcolor='w')
 plt.show()
@@ -118,7 +118,7 @@ plt.xlabel('Is the line detected?')
 plt.ylabel('Is the line present?')
 plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN}')
 plt.text(0, 0, np.round(confusion[0][0], 5), ha='center', backgroundcolor='w')
-plt.text(0, 1, np.round(confusion[0][1], 5), ha='center', backgroundcolor='w')
+plt.text(0, 1, np.round(confusion[0][1], 5), ha='center', backgroundcolor='yellow')
 plt.text(1, 0, np.round(confusion[1][0], 5), ha='center', backgroundcolor='w')
 plt.text(1, 1, np.round(confusion[1][1], 5), ha='center', backgroundcolor='w')
 plt.show()
@@ -143,9 +143,9 @@ for i in range(len(lines_present[0])):
     plt.xticks([0, 1], ['Line detected', 'Line not detected'])
     plt.xlabel('Is the line detected?')
     plt.ylabel('Is the line present?')
-    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN} for line {i+1}')
+    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN} for line {i}')
     plt.text(0, 0, confusion[0][0], ha='center', backgroundcolor='w')
-    plt.text(0, 1, confusion[0][1], ha='center', backgroundcolor='w')
+    plt.text(0, 1, confusion[0][1], ha='center', backgroundcolor='yellow')
     plt.text(1, 0, confusion[1][0], ha='center', backgroundcolor='w')
     plt.text(1, 1, confusion[1][1], ha='center', backgroundcolor='w')
     plt.show()
@@ -167,9 +167,9 @@ for i in range(len(lines_present[0])):
     plt.xticks([0, 1], ['Line detected', 'Line not detected'])
     plt.xlabel('Is the line detected?')
     plt.ylabel('Is the line present?')
-    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN} for line {i+1}')
+    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN} for line {i}')
     plt.text(0, 0, np.round(confusion[0][0], 5), ha='center', backgroundcolor='w')
-    plt.text(0, 1, np.round(confusion[0][1], 5), ha='center', backgroundcolor='w')
+    plt.text(0, 1, np.round(confusion[0][1], 5), ha='center', backgroundcolor='yellow')
     plt.text(1, 0, np.round(confusion[1][0], 5), ha='center', backgroundcolor='w')
     plt.text(1, 1, np.round(confusion[1][1], 5), ha='center', backgroundcolor='w')
     plt.show()
