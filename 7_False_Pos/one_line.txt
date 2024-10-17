@@ -1,2 +1,0 @@
-index	name	wl	A_in_l	A_in_u	v_in	sig_in	free
-0	Ha	6562.80	1.0	1.0	100	100	l
