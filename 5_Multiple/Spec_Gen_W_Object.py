@@ -1,4 +1,4 @@
-from object import Spectrum
+from spectrum_obj import Spectrum
 
 spec = Spectrum('lines_in.txt', 'fitting.txt', Nsim=100)
 
