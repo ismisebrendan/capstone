@@ -66,7 +66,7 @@ peak_params = []
 # peaksdata = 'peaksdata_3peaks.txt'
 # peaksdata = 'peaksdata_4peaks.txt'
 # peaksdata = 'peaksdata_4peaks_test.txt'
-peaksdata = 'peaksdata_H_OIII.txt'
+peaksdata = 'C:\\Users\\brend\\Documents\\GitHub\\capstone\\3_Misc\\peaksdata_H_OIII.txt'
 # peaksdata = 'peaksdata_vary.txt'
 
 # Is a peak free or dependant on another one
