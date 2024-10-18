@@ -2,26 +2,23 @@ This contains the code for my 4th year undergratudate capstone project. The firs
 
 This was initially based off code by Anna Cestaro, a summer undergraduate intern at Armagh Observatory in summer 2024.
 
-I feel that all of these have at least some interesting aspect to them which is why I have kept them. (I think - honestly I have forgotten what exactly is in each and what advances were made each time. I unfortunately did not keep a changelog).
 
-# 1
-This would be the initial code that was written by Anna, so because I did not write it I haven't uplodaded it.
 
-# 2 Theoretical
-The initial changes I made to the code to  produce lines of different ratios and lines that are dependent on different lines.
+# False Positive Detection
+This code generates spectra with all expected lines present, spectra with only some lines present and an attempt made to fit lines to the noise, and 'spectra' of noise only with lines fit to that.
 
-# 3 Misc
-Some messing around with inputs and fitting.
+This data is then used to train a neural network that attempts to differentiate false and real positives while also not rejecting true positives.
 
-# 4 Wavelength Spectra Code
-Made lines dependent on others for their velocity and profiles.
 
-Also introduced redshifts.
+# Recover Parameters
+Trying to recover the parameters of an emission line for different A/N and determining at what point they become biased and can no longer be recovered accurately.
 
-# 5 Multiple
-Converted the spectrum generation to be object oriented.
 
-Also made the code iterate many times varying profiles and velocities. However I realised this was not relevant so it was abandoned halfway through.
+# Funcs
+The folder containing the relevant functions for this project
 
-# 7 False Pos
-This code generates spectra with and without falsly detected lines for different line ratios. A neural network is trained on all of this data and then can be tested on other data.
+# Spectrum Object
+The python object responsible for the generation and fitting of all these spectra.
+
+# Old Code
+The major steps that led towards the code here, it can be ignored.
