@@ -1,4 +1,4 @@
-I feel that all of these have at least some interesting aspect to them which is why I have kept them here. (I think - honestly I have forgotten what exactly is in each and what advances were made each time. I unfortunately did not keep a changelog).
+I feel that all of these have at least some interesting aspect to them which is why I have kept them here.
 
 # 1
 This would be the initial code that was written by Anna, so because I did not write it I haven't uplodaded it.
