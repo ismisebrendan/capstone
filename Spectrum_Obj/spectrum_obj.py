@@ -63,7 +63,7 @@ class Spectrum():
         
         # For output
         self.data = np.array([])
-        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sigs_in\n10 sigs_out\n11 sigs_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 This information'
+        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sigs_in\n10 sigs_out\n11 sigs_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 This information'
         
     def print_info(self):
         """
@@ -87,6 +87,13 @@ class Spectrum():
         Take the input files and extract the data from them.
         
         """
+        
+        self.peak_params = []
+        self.fit_params = []
+        self.doublet = []
+        self.vel_dep = []
+        self.prof_dep = []
+        self.peaks_no = 0
         
         # Plotting file
         with open(self.peaksdata) as f:
@@ -155,6 +162,20 @@ class Spectrum():
             
             self.fit_params[i][3] = self.fit_params[self.vel_dep[i]][3]
             self.fit_params[i][4] = self.fit_params[self.prof_dep[i]][4]
+        
+        self.get_line_ratios
+    
+    def get_line_ratios(self):
+        """
+        Get the line ratios for all the peaks
+
+        """
+        
+        # Get the line ratios
+        self.line_ratios = np.array(self.peak_params)[:,1]
+        for i in range(self.peaks_no):
+            if self.doublet[i] != i:
+                self.line_ratios[i] = self.line_ratios[i] * self.line_ratios[self.doublet[i]]
 
     def create_bkg(self):
         """
@@ -177,7 +198,6 @@ class Spectrum():
         """
         
         # Prerequesite functions
-        self.get_data()
         self.create_bkg()
         self.gen_arrs()
 
@@ -378,12 +398,14 @@ class Spectrum():
                 self.vels_unc_out[peak][index] = fit.params[f'g{peak}_vel'].stderr
                 self.lams_out[peak][index] = fit.params[f'g{peak}_lam_rf'].value
                 self.lams_unc_out[peak][index] = fit.params[f'g{peak}_lam_rf'].stderr
-                self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
-                self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
+                
 
             # Plotting
             if plotting == True:
                 self.plot_spectrum(y, fit)
+        
+        self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
+        self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
         
         # Save AoNs
         for peak in range(self.peaks_no):
@@ -556,7 +578,7 @@ class Spectrum():
        
         """
         
-        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sigs_in, self.sigs_out, self.sigs_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim]
+        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sigs_in, self.sigs_out, self.sigs_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet]
         return data
 
     def output(self, outfile='peak_data_out.pickle', overwrite=True):
@@ -658,10 +680,14 @@ class Spectrum():
         self.peak_params = data_in[15]
         self.peaks_no = data_in[16]
         self.Nsim = data_in[17]
+        self.doublet = data_in[18]
         
         # Calculate fluxes
         self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
         self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
+        
+        # Get ratios
+        self.get_line_ratios()
 
     def overwrite(self, parameter, value):
         """
@@ -822,7 +848,7 @@ class Spectrum():
         
         return arr, std, med
 
-    def heatmap_sum(self, param, line, brightest=4, text=True):
+    def heatmap_sum(self, param, line, brightest=4, text=True, step=1, transparency=False):
         """
         Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
 
@@ -836,11 +862,16 @@ class Spectrum():
             The brightest line (default corrseponds to H alpha in the normal input structure).
         text : bool
             Whether or not to show the value as text in the plot.
-        
+        step : float, default=1
+            The step size for the bins.   
+        transparency : bool, default=False
+            Change the transparency of the cell depending on the number of points in this range.
+            
         See Also
         --------
         heatmap_brightest : Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line.
-   
+        scatter_size : Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
+        
         """
         
         label = f'({param}_out - {param}_in)/{param}_in'
@@ -854,26 +885,36 @@ class Spectrum():
         
         interest_val = self.recover_data(peak=line, param=param)[0][ind]
         
-        x_vals = np.linspace(int(min(sum_AoN)), int(max(sum_AoN)) + 1, int(max(sum_AoN)) + 2, dtype=int)
-        y_vals = np.linspace(int(min(interest_AoN)), int(max(interest_AoN)) + 1, int(max(interest_AoN)) + 2, dtype=int)
+        x_vals = np.arange(np.floor(min(sum_AoN)), np.ceil(max(sum_AoN)), step)
+        y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
+
+        no_points = np.empty((len(x_vals) - 1, len(y_vals) - 1))
 
         stds = []
         medians = []
 
-        for i in x_vals[1:]:
-            ind_x = (sum_AoN < i) * (sum_AoN > i - 1)
+        for i in range(1, len(x_vals)):
+            ind_x = (sum_AoN < x_vals[i]) * (sum_AoN > x_vals[i] - step)
 
-            for j in y_vals[1:]:
-                ind_y = (interest_AoN < j) * (interest_AoN > j-1)
+            for j in range(1, len(y_vals)):
+                ind_y = (interest_AoN < y_vals[j]) * (interest_AoN > y_vals[j] - step)
                 
+                no_points[i-1][j-1] = len(interest_AoN[ind_y*ind_x])
                 stds.append(np.std(interest_val[ind_y*ind_x]))
                 medians.append(np.median(interest_val[ind_y*ind_x]))
+        
+        if transparency == True:
+            no_points_norm = np.log10(no_points )/ np.log10(no_points.max())
+            no_points_norm = np.nan_to_num(no_points_norm, neginf=0)
+        else:
+            no_points_norm = np.ones_like(no_points)
+
 
         stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
         # Plot the standard deviations
-        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno')
+        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points_norm.T)
         plt.colorbar(pc)
         plt.title(f'Standard deviation of {label}')
         plt.xlabel('Sum of A/N of all lines')
@@ -885,13 +926,13 @@ class Spectrum():
                     if np.isnan(stds.T[j][i]):
                         pass
                     else:
-                        plt.text(x_vals[i]+0.5, y_vals[j]+0.5, np.round(stds.T[j][i], 2), ha='center', va='center', color='w', fontsize='x-small')
+                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 2), ha='center', va='center', color='w', fontsize='x-small')
       
         plt.show()
 
          # Plot the medians
         norm = TwoSlopeNorm(vcenter=0)
-        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic')
+        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points_norm.T)
         plt.colorbar(pc)
         plt.title(f'Median of {label}')
         plt.xlabel('Sum of A/N of all lines')
@@ -903,11 +944,11 @@ class Spectrum():
                     if np.isnan(medians.T[j][i]):
                         pass
                     else:
-                        plt.text(x_vals[i]+0.5, y_vals[j]+0.5, np.round(medians.T[j][i], 3), ha='center', va='center', color='k', fontsize='x-small')
+                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 3), ha='center', va='center', color='k', fontsize='x-small')
                 
         plt.show()
 
-    def heatmap_brightest(self, param, line, brightest=4, text=True):
+    def heatmap_brightest(self, param, line, brightest=4, text=True, step=1, transparency=False):
         """
         Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line.
 
@@ -921,11 +962,16 @@ class Spectrum():
             The brightest line (default corresponds to H alpha in the normal input structure).
         text : bool
             Whether or not to show the value as text in the plot.
+        step : float, default=1
+            The step size for the bins.
+        transparency : bool, default=False
+            Change the transparency of the cell depending on the number of points in this range.
             
         See Also
         --------
         heatmap_sum : Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
-     
+        scatter_size : Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
+        
         """
         
         label = f'({param}_out - {param}_in)/{param}_in'
@@ -940,26 +986,36 @@ class Spectrum():
         interest_val = self.recover_data(peak=line, param=param)[0][ind]
         
         
-        x_vals = np.linspace(int(min(brightest_AoN)), int(max(brightest_AoN)) + 1, int(max(brightest_AoN)) + 2, dtype=int)
-        y_vals = np.linspace(int(min(interest_AoN)), int(max(interest_AoN)) + 1, int(max(interest_AoN)) + 2, dtype=int)
+        x_vals = np.arange(np.floor(min(brightest_AoN)), np.ceil(max(brightest_AoN)), step)
+        y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
 
         stds = []
         medians = []
+        
+        no_points = np.empty((len(x_vals) - 1, len(y_vals) - 1))
 
-        for i in x_vals[1:]:
-            ind_x = (brightest_AoN < i) * (brightest_AoN > i - 1)
+        for i in range(1, len(x_vals)):
+            ind_x = (brightest_AoN < x_vals[i]) * (brightest_AoN > x_vals[i] - step)
 
-            for j in y_vals[1:]:
-                ind_y = (interest_AoN < j) * (interest_AoN > j-1)
+            for j in range(1, len(y_vals)):
+                ind_y = (interest_AoN < y_vals[j]) * (interest_AoN > y_vals[j] - step)
                 
+                no_points[i-1][j-1] = len(interest_AoN[ind_y*ind_x])
                 stds.append(np.std(interest_val[ind_y*ind_x]))
                 medians.append(np.median(interest_val[ind_y*ind_x]))
+        
+        if transparency == True:
+            no_points_norm = np.log10(no_points )/ np.log10(no_points.max())
+            no_points_norm = np.nan_to_num(no_points_norm, neginf=0)
+        else:
+            no_points_norm = np.ones_like(no_points)
+
 
         stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
         # Plot the standard deviations
-        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno')
+        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points_norm.T)
         plt.colorbar(pc)
         plt.title(f'Standard deviation of {label}')
         plt.xlabel(f'A/N of line {brightest}')
@@ -971,13 +1027,13 @@ class Spectrum():
                     if np.isnan(stds.T[j][i]):
                         pass
                     else:
-                        plt.text(x_vals[i]+0.5, y_vals[j]+0.5, np.round(stds.T[j][i], 3), ha='center', va='center', color='w', fontsize='x-small')
+                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 3), ha='center', va='center', color='w', fontsize='x-small')
         
         plt.show()
 
          # Plot the medians
         norm = TwoSlopeNorm(vcenter=0)
-        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic')
+        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points_norm.T)
         plt.colorbar(pc)
         plt.title(f'Median of {label}')
         plt.xlabel(f'A/N of line {brightest}')
@@ -989,7 +1045,7 @@ class Spectrum():
                     if np.isnan(medians.T[j][i]):
                         pass
                     else:
-                        plt.text(x_vals[i]+0.5, y_vals[j]+0.5, np.round(medians.T[j][i], 2), ha='center', va='center', color='k', fontsize='x-small')
+                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 2), ha='center', va='center', color='k', fontsize='x-small')
 
         plt.show()
         
@@ -1009,5 +1065,84 @@ class Spectrum():
         return close_0
         
         
+    def scatter_size(self, param, line, brightest=4, step=1):
+        """
+        Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
+
+        Parameters
+        ----------
+        param : {'sig', 'vel', 'A', 'flux'}
+            Which parameter to check for.
+        line : int
+            The line of interest.
+        brightest : int, default=4
+            The brightest line (default corresponds to H alpha in the normal input structure).
+        step : float, default=1
+            The step size for the bins.
+            
+        See Also
+        --------
+        heatmap_sum : Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
+     
+        """
         
+        label = f'({param}_out - {param}_in)/{param}_in'
+        
+        # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
+        # Where AoN <= 12, gives array of all 2D indices that have this. remove any index that doesn't appear 8 times (8 lines)
+        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)
+        
+        interest_AoN = self.AoNs_out[line][ind]
+        brightest_AoN = self.AoNs_out[brightest][ind]
+        
+        interest_val = self.recover_data(peak=line, param=param)[0][ind]
+        
+        
+        x_vals = np.arange(np.floor(min(brightest_AoN)), np.ceil(max(brightest_AoN)), step)
+        y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
+        
+        mesh = np.meshgrid(x_vals[:-1] + step/2, y_vals[:-1] + step/2)
+
+        stds = []
+        medians = []
+        
+        no_points = np.empty((len(x_vals) - 1, len(y_vals) - 1))
+
+        for i in range(1, len(x_vals)):
+            ind_x = (brightest_AoN < x_vals[i]) * (brightest_AoN > x_vals[i] - step)
+
+            for j in range(1, len(y_vals)):
+                ind_y = (interest_AoN < y_vals[j]) * (interest_AoN > y_vals[j] - step)
+                
+                no_points[i-1][j-1] = len(interest_AoN[ind_y*ind_x])
+                stds.append(np.std(interest_val[ind_y*ind_x]))
+                medians.append(np.median(interest_val[ind_y*ind_x]))
+
+        stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
+        medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
+        
+        # Plot the standard deviations
+        plt.title(f'Standard deviation of {label}')
+        plt.xlabel(f'A/N of line {brightest}')
+        plt.ylabel(f'A/N of line {line}')
+        # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
+        # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
+        plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
+        plt.scatter(mesh[0], mesh[1], s=np.log10(no_points.T)*10, c=stds.T, cmap='inferno')
+        plt.colorbar()
+        plt.show()
+
+        #  # Plot the medians
+        norm = TwoSlopeNorm(vcenter=0)
+        # pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic')
+        # plt.colorbar(pc)
+        plt.title(f'Median of {label}')
+        plt.xlabel(f'A/N of line {brightest}')
+        plt.ylabel(f'A/N of line {line}')
+        # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
+        # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
+        plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
+        plt.scatter(mesh[0], mesh[1], s=np.log10(no_points.T)*10, c=medians.T, cmap='coolwarm', norm=norm)
+        plt.colorbar()
+        plt.show()
         
