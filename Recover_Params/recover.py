@@ -31,13 +31,13 @@ for i in range(8):
     spec_in.scatter_size(param='vel', line=i, step=0.5)
     spec_in.scatter_size(param='flux', line=i, step=0.5)
 
-# # Plot heatmaps
-# for i in range(8):
-#     spec_in.heatmap_brightest(param='sig', line=i)
-#     spec_in.heatmap_brightest(param='vel', line=i)
-#     spec_in.heatmap_brightest(param='flux', line=i)
+# Plot heatmaps
+for i in range(8):
+    spec_in.heatmap_brightest(param='sig', line=i, transparency=True, step=0.5)
+    spec_in.heatmap_brightest(param='vel', line=i, transparency=True, step=0.5)
+    spec_in.heatmap_brightest(param='flux', line=i, transparency=True, step=0.5)
 
-# for i in range(8):
-#     spec_in.heatmap_sum(param='sig', line=i, text=False)
-#     spec_in.heatmap_sum(param='vel', line=i, text=False)
-#     spec_in.heatmap_sum(param='flux', line=i, text=False)
+for i in range(8):
+    spec_in.heatmap_sum(param='sig', line=i, text=False, transparency=True, step=0.5)
+    spec_in.heatmap_sum(param='vel', line=i, text=False, transparency=True, step=0.5)
+    spec_in.heatmap_sum(param='flux', line=i, text=False, transparency=True, step=0.5)
