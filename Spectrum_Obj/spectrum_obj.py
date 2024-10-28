@@ -749,12 +749,12 @@ class Spectrum():
         elif param == 'flux':
             array = (self.f_out - self.f_in) / self.f_in
         
-        close_0 = self.count_not_fit()
+        close_0 = self.find_not_fit(peak=line, param=param)
         
         label = f'({param}_out - {param}_in)/{param}_in'
         plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
         plt.scatter(self.AoNs_out[line], array[line], s=0.5, label='Data')
-        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5, label=r'$\sigma \leq 10$ ')
+        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5)
         plt.xlabel('A/N')
         plt.ylabel(label)
         plt.xlim(xlim)
@@ -796,14 +796,14 @@ class Spectrum():
             array = (self.f_out - self.f_in) / self.f_in
             unc = self.f_unc_out / self.f_in
                 
-        close_0 = self.count_not_fit()
+        close_0 = self.find_not_fit(peak=line, param=param)
 
         label = f'({param}_out - {param}_in)/{param}_in'
         plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
         plt.scatter(self.AoNs_out[line], array[line], s=0.5)
         plt.errorbar(self.AoNs_out[line], array[line], unc[line], fmt='none', label='Data')
         plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5)
-        plt.errorbar(self.AoNs_out[line][close_0], array[line][close_0], unc[line][close_0], fmt='none', label=r'$\sigma \leq 10$', color='#ff7f0e')
+        plt.errorbar(self.AoNs_out[line][close_0], array[line][close_0], unc[line][close_0], fmt='none', color='#ff7f0e')
         plt.xlabel('A/N')
         plt.ylabel(label)
         plt.xlim(xlim)
@@ -811,7 +811,7 @@ class Spectrum():
         plt.legend()
         plt.show()
                 
-    def recover_data(self, peak=0, param='sig'):
+    def recover_data(self, peak=0, param='sig', ind=None):
         """
         Find the difference between the input and output values of different components.
         
@@ -819,9 +819,11 @@ class Spectrum():
         ----------
         peak : int, default=0
             Which peak of the spectrum to check for.
-        param : {'sig', 'vel', 'A', 'flux'}
+        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
             Which parameter to check for.
-        
+        ind : array, defualt=None
+            Which specific elements to check, if None checks all
+            
         Returns
         -------
         arr : array
@@ -843,6 +845,8 @@ class Spectrum():
             array = (self.f_out - self.f_in) / self.f_in
 
         arr = array[peak]
+        if ind is not None:
+            arr = arr[ind][0]
         std = np.std(arr)
         med = np.median(arr)
         
@@ -876,14 +880,20 @@ class Spectrum():
         
         label = f'({param}_out - {param}_in)/{param}_in'
         
-        # Check for outliers in the output A/N of the brightest line (keep within AoN max + 2) and filter accordingly
-        # Where AoN <= 12, gives array of all 2D indices that have this. remove any index that doesn't appear 8 times (8 lines)
-        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)
+        # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
+        # Where AoN <= 12, gives array of all 2D indices that have this. Remove any index that doesn't appear 8 times (peaks_no times)
+        # Also remove the ones that go to -1
+        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)[0]
+        
+        close_0 = self.find_not_fit(peak=line, param=param, ind=ind)
         
         interest_AoN = self.AoNs_out[line][ind]
-        sum_AoN = np.sum(self.AoNs_out[:,ind], axis=0)[0]
-        
+        sum_AoN = np.sum(self.AoNs_out[:,ind], axis=0)
         interest_val = self.recover_data(peak=line, param=param)[0][ind]
+    
+        interest_AoN = np.delete(interest_AoN, close_0)
+        sum_AoN = np.delete(sum_AoN, close_0)
+        interest_val = np.delete(interest_val, close_0)
         
         x_vals = np.arange(np.floor(min(sum_AoN)), np.ceil(max(sum_AoN)), step)
         y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
@@ -977,14 +987,19 @@ class Spectrum():
         label = f'({param}_out - {param}_in)/{param}_in'
         
         # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
-        # Where AoN <= 12, gives array of all 2D indices that have this. remove any index that doesn't appear 8 times (8 lines)
-        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)
+        # Where AoN <= 12, gives array of all 2D indices that have this. Remove any index that doesn't appear 8 times (peaks_no times)
+        # Also remove the ones that go to -1
+        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)[0]
+        
+        close_0 = self.find_not_fit(peak=line, param=param, ind=ind)
         
         interest_AoN = self.AoNs_out[line][ind]
         brightest_AoN = self.AoNs_out[brightest][ind]
-        
         interest_val = self.recover_data(peak=line, param=param)[0][ind]
-        
+    
+        interest_AoN = np.delete(interest_AoN, close_0)
+        brightest_AoN = np.delete(brightest_AoN, close_0)
+        interest_val = np.delete(interest_val, close_0)
         
         x_vals = np.arange(np.floor(min(brightest_AoN)), np.ceil(max(brightest_AoN)), step)
         y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
@@ -1049,9 +1064,18 @@ class Spectrum():
 
         plt.show()
         
-    def count_not_fit(self):
+    def find_not_fit(self, peak=0, param='sig', ind=None):
         """
         Count the number of lines in the data that no fit was found for them based on having a very low standard deviation.
+        
+        Parameters
+        ----------
+        peak : int, default=0
+            Which peak of the spectrum to check for.
+        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
+            Which parameter to check for.
+        ind : array, defualt=None
+            Which specific elements to check, if None checks all
         
         Returns
         -------
@@ -1059,8 +1083,9 @@ class Spectrum():
             The indices where sigs_out is close to 0
         """
         
-        # Find where sig_out is close to 0
-        close_0 = np.unique(np.where(np.abs(self.sigs_out) <= 10)[1])
+        # Find where param is close to 0
+        
+        close_0 = np.unique(np.where(np.abs(self.recover_data(peak=peak, param=param, ind=ind)[0] + 1) <= 0.01)[0])
         
         return close_0
         
@@ -1089,14 +1114,19 @@ class Spectrum():
         label = f'({param}_out - {param}_in)/{param}_in'
         
         # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
-        # Where AoN <= 12, gives array of all 2D indices that have this. remove any index that doesn't appear 8 times (8 lines)
-        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)
+        # Where AoN <= 12, gives array of all 2D indices that have this. Remove any index that doesn't appear 8 times (peaks_no times)
+        # Also remove the ones that go to -1
+        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)[0]
+        
+        close_0 = self.find_not_fit(peak=line, param=param, ind=ind)
         
         interest_AoN = self.AoNs_out[line][ind]
         brightest_AoN = self.AoNs_out[brightest][ind]
-        
         interest_val = self.recover_data(peak=line, param=param)[0][ind]
-        
+    
+        interest_AoN = np.delete(interest_AoN, close_0)
+        brightest_AoN = np.delete(brightest_AoN, close_0)
+        interest_val = np.delete(interest_val, close_0)
         
         x_vals = np.arange(np.floor(min(brightest_AoN)), np.ceil(max(brightest_AoN)), step)
         y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
