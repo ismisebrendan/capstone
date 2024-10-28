@@ -356,7 +356,7 @@ class Spectrum():
                 # These values are fixed either physically or by the instrument
                 pfit.add(f'g{i}_lam_rf', value=self.fit_params[i][0], vary=False)
                 pfit.add(name=f'g{i}_sig_resolution', value=self.sig_resolution, vary=False)
-                
+
                 if self.doublet[i] == i:
                     # For free lines take initial guess as largest y value in the region +- 100 Angstrom from where it should be based on initial guesses
                     expec_lam = self.fit_params[i][0] *  (1 + self.fit_params[i][3]/c)
@@ -752,9 +752,9 @@ class Spectrum():
         close_0 = self.find_not_fit(peak=line, param=param)
         
         label = f'({param}_out - {param}_in)/{param}_in'
-        plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
+        plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[line][3]}, sig_in = {self.peak_params[line][4]}')
         plt.scatter(self.AoNs_out[line], array[line], s=0.5, label='Data')
-        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5)
+        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5, label='Data not fit')
         plt.xlabel('A/N')
         plt.ylabel(label)
         plt.xlim(xlim)

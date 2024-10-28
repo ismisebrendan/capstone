@@ -1,0 +1,11 @@
+index	name	wl	A_l	A_u	v_guess	sig_guess	free	tied
+0	Hb	4861.32	0.0	0.349	100	100	d5	t5
+1	Hbbroad	4861.32	0.0	0.349	100	300	d6	t6
+2	OIIIa	5006.77	0.0	inf	100	100	l	t5
+3	OIIIb	4958.83	0.335	0.335	100	100	d2	t5
+4	NIIb	6547.96	0.340	0.340	100	100	d7	t5
+5	Ha	6562.80	0.0	inf	100	100	l	f
+6	Habroad	6562.80	0.0	inf	100	300	l	f
+7	NIIa	6583.34	0.0	inf	100	100	l	t5
+8	SIIb	6716.31	1.0	1.0	100	100	d9	t5
+9	SIIa	6730.68	0.0	inf	100	100	l	t5	
