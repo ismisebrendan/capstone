@@ -1,3 +1,5 @@
+# Rename the data files that end with a single digit to have 0 before the digit
+
 path=$1
 
 files=$(find $path -type f -name "*.txt")
