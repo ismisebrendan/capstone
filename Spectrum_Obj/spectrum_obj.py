@@ -7,9 +7,6 @@ from matplotlib.colors import TwoSlopeNorm
 import sys
 import os
 
-# For interactive plots, comment out if not using something that allows interactive plots.
-%matplotlib qt
-
 # Point to the funcs file
 func_path = os.path.abspath('../') + '/Funcs'
 sys.path.insert(0, func_path)
@@ -66,7 +63,7 @@ class Spectrum():
         
         # For output
         self.data = np.array([])
-        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sigs_in\n10 sigs_out\n11 sigs_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 This information'
+        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 This information'
         
     def print_info(self):
         """
@@ -170,7 +167,7 @@ class Spectrum():
     
     def get_line_ratios(self):
         """
-        Get the line ratios for all the peaks
+        Get the line ratios for all the peaks.
 
         """
         
@@ -222,15 +219,15 @@ class Spectrum():
         
         # Initialize input arrays
         self.As_in = np.empty((self.peaks_no, self.Nsim))
-        self.sigs_in = np.empty((self.peaks_no, self.Nsim))
+        self.sig_in = np.empty((self.peaks_no, self.Nsim))
         self.vels_in = np.empty((self.peaks_no, self.Nsim))
         self.lams_in = np.array([p[0] for p in self.peak_params])
 
         # Initialize output arrays
         self.As_out = np.empty((self.peaks_no, self.Nsim))
         self.As_unc_out = np.empty((self.peaks_no, self.Nsim))
-        self.sigs_out = np.empty((self.peaks_no, self.Nsim))
-        self.sigs_unc_out = np.empty((self.peaks_no, self.Nsim))
+        self.sig_out = np.empty((self.peaks_no, self.Nsim))
+        self.sig_unc_out = np.empty((self.peaks_no, self.Nsim))
         self.vels_out = np.empty((self.peaks_no, self.Nsim))
         self.vels_unc_out = np.empty((self.peaks_no, self.Nsim))
         self.lams_out = np.empty((self.peaks_no, self.Nsim))
@@ -250,7 +247,7 @@ class Spectrum():
         Returns
         -------
         y_vals : array
-            The generated spectra
+            The generated spectra.
     
         """
         
@@ -277,7 +274,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 else:
                     amplitudes.append(np.nan)    
@@ -291,7 +288,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A * amplitudes[self.doublet[i]]
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 
             # Generate noise and add it to the model
@@ -332,7 +329,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 else:
                     amplitudes.append(np.nan)    
@@ -346,7 +343,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A * amplitudes[self.doublet[i]]
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 
             # Generate noise and add it to the model
@@ -400,8 +397,8 @@ class Spectrum():
             for peak in range(self.peaks_no):
                 self.As_out[peak][index] = fit.params[f'g{peak}_A'].value
                 self.As_unc_out[peak][index] = fit.params[f'g{peak}_A'].stderr
-                self.sigs_out[peak][index] = fit.params[f'g{peak}_sig'].value
-                self.sigs_unc_out[peak][index] = fit.params[f'g{peak}_sig'].stderr
+                self.sig_out[peak][index] = fit.params[f'g{peak}_sig'].value
+                self.sig_unc_out[peak][index] = fit.params[f'g{peak}_sig'].stderr
                 self.vels_out[peak][index] = fit.params[f'g{peak}_vel'].value
                 self.vels_unc_out[peak][index] = fit.params[f'g{peak}_vel'].stderr
                 self.lams_out[peak][index] = fit.params[f'g{peak}_lam_rf'].value
@@ -414,10 +411,10 @@ class Spectrum():
 
             # Plotting
             if plotting == True:
-                self.plot_spectrum(y, fit.best_fit, model)
+                self.plot_spectrum(y, fit.best_fit, self.model)
         
-        self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
-        self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
+        self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
+        self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
         
         # Save AoNs
         for peak in range(self.peaks_no):
@@ -460,7 +457,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 else:
                     amplitudes.append(np.nan)    
@@ -480,7 +477,7 @@ class Spectrum():
                     
                     # Store input data
                     self.As_in[i][index] = A * relative_A * amplitudes[self.doublet[i]]
-                    self.sigs_in[i][index] = sig
+                    self.sig_in[i][index] = sig
                     self.vels_in[i][index] = vel
                 
             # Generate noise and add to the model
@@ -534,14 +531,18 @@ class Spectrum():
             for peak in range(self.peaks_no):
                 self.As_out[peak][index] = fit.params[f'g{peak}_A'].value
                 self.As_unc_out[peak][index] = fit.params[f'g{peak}_A'].stderr
-                self.sigs_out[peak][index] = fit.params[f'g{peak}_sig'].value
-                self.sigs_unc_out[peak][index] = fit.params[f'g{peak}_sig'].stderr
+                self.sig_out[peak][index] = fit.params[f'g{peak}_sig'].value
+                self.sig_unc_out[peak][index] = fit.params[f'g{peak}_sig'].stderr
                 self.vels_out[peak][index] = fit.params[f'g{peak}_vel'].value
                 self.vels_unc_out[peak][index] = fit.params[f'g{peak}_vel'].stderr
                 self.lams_out[peak][index] = fit.params[f'g{peak}_lam_rf'].value
                 self.lams_unc_out[peak][index] = fit.params[f'g{peak}_lam_rf'].stderr
-                self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
-                self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
+                self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
+                self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
+
+            self.spectra_mat[index] = y
+            self.model_mat[index] = self.model
+            self.fit_mat[index] = fit.best_fit
 
             # Plotting
             if plotting == True:
@@ -552,7 +553,7 @@ class Spectrum():
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
 
-    def plot_spectrum(self, y, fit, model):
+    def plot_spectrum(self, y, fit, model, interactive=False):
         """
         Plot a spectrum.
 
@@ -564,50 +565,14 @@ class Spectrum():
             The fit data for the model.
         model : array
             The model data.
+        interactive : bool, default=False
+            Whether to have it be interactive or not.
 
         See Also
         --------
-        plot_spectrum_return : Plot a spectrum and return to param v A/N graph on right click.
         plot_spectrum_centre : Plot spectra centred on certain wavelengths.
       
         """
-        
-        labels = ['input model + noise', 'input model', 'fitted model']
-        plt.plot(self.x, y, 'k-')
-        plt.plot(self.x, model, 'c-')
-        plt.plot(self.x, fit, 'r-')
-        plt.xlabel(r'$\lambda$ ($\AA$)')
-        plt.ylabel('Amplitude (arbitrary units)')
-        if self.target_type != None:
-            plt.title(f'Generated and fit spectrum with emission lines of {self.target_type}')
-        else:
-            plt.title('Generated and fit spectrum with emission lines')
-        plt.legend(labels)
-        plt.grid()
-        plt.show()
-    
-    def plot_spectrum_return(self, y, fit, model):
-        """
-        Plot a spectrum and return to param v A/N graph on right click.
-
-        Parameters
-        ----------
-        y : array
-            The amplitude data.
-        fit : array
-            The fit data for the model.
-        model : array
-            The model data.
-
-        See Also
-        --------
-        plot_spectrum : Plot a spectrum.
-        plot_spectrum_centre : Plot spectra centred on certain wavelengths.
-        
-        """
-        
-        global current_plot
-        current_plot = 'spectrum'
         
         fig, ax = plt.subplots()
 
@@ -625,9 +590,10 @@ class Spectrum():
         plt.grid()
         plt.show()
         
-        cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
+        if interactive == True:
+            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)    
 
-    def plot_spectrum_centre(self, y, fit, model, centre, ran):
+    def plot_spectrum_centre(self, y, fit, model, centre, ran, interactive=False):
         """
         Plot spectra centred on certain wavelengths.
 
@@ -642,12 +608,13 @@ class Spectrum():
         centre : array
             The wavelengths to centre the plots on.
         ran : float
-            The range to plot from, centre - ran to centre + ran
+            The range to plot from, centre - ran to centre + ran.
+        interactive : bool, default=False
+            Whether to have it be interactive or not.
         
         See Also
         --------
         plot_spectrum : Plot a spectrum.
-        plot_spectrum_return : Plot a spectrum and return to param v A/N graph on right click.
         
         """
         
@@ -676,7 +643,8 @@ class Spectrum():
             fig.suptitle('Generated and fit spectrum with emission lines')
         plt.show()
         
-        cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
+        if interactive == True:
+            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
 
     def dump(self, matrices=False):
         """
@@ -694,14 +662,14 @@ class Spectrum():
        
         """
         
-        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sigs_in, self.sigs_out, self.sigs_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet]
+        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sig_in, self.sig_out, self.sig_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet]
         
         if matrices == True:
             data.append(self.spectra_mat)
             data.append(self.model_mat)
             data.append(self.fit_mat)
             
-            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sigs_in\n10 sigs_out\n11 sigs_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 spectra_mat\n20 model_mat\n21 fit_mat\n22 This information'
+            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 spectra_mat\n20 model_mat\n21 fit_mat\n22 This information'
         
         return data
 
@@ -797,9 +765,9 @@ class Spectrum():
         self.lams_in = data_in[6]
         self.lams_out = data_in[7]
         self.lams_unc_out = data_in[8]
-        self.sigs_in = data_in[9]
-        self.sigs_out = data_in[10]
-        self.sigs_unc_out = data_in[11]
+        self.sig_in = data_in[9]
+        self.sig_out = data_in[10]
+        self.sig_unc_out = data_in[11]
         self.vels_in = data_in[12]
         self.vels_out = data_in[13]
         self.vels_unc_out = data_in[14]
@@ -814,8 +782,8 @@ class Spectrum():
             self.fit_mat = data_in[21]
         
         # Calculate fluxes
-        self.f_out, self.f_unc_out = flux(self.As_out, self.sigs_out, self.As_unc_out, self.sigs_unc_out)
-        self.f_in, self.f_unc_in = flux(self.As_in, self.sigs_in)
+        self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
+        self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
         
         # Get ratios
         self.get_line_ratios()
@@ -858,20 +826,23 @@ class Spectrum():
         When the mouse is left double clicked on the plot show the spectrum of the closest data point, when right double clicked go back.
         
         """
-        
+                
         x_click, y_click = event.xdata, event.ydata
+        print(event.xdata, event.ydata)
         
         closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
+        closest_point = np.min(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
         if event.button == 1 and current_plot == 'results' and event.dblclick == True: # Left click
             plt.close()
-            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150)
+            print(closest_point_ind, closest_point)
+            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
         elif event.button == 3 and current_plot == 'spectrum' and event.dblclick == True: # Right click
             plt.close()
-            self.plot_results(line=line_of_interest, param=param_of_interest, xlim=xlim_of_interest, ylim=ylim_of_interest)
+            self.plot_results(line=line_of_interest, param=param_of_interest, xlim=xlim_of_interest, ylim=ylim_of_interest, interactive=True)
         else:
             pass
-    
-    def plot_results(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5]):
+            
+    def plot_results(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], interactive=False, errorbar=False):
         """
         Plot the difference between the input and output values of different components.
         
@@ -882,24 +853,28 @@ class Spectrum():
         param : {'sig', 'vel', 'A', 'flux'}
             Which parameter to plot for. 
         xlim : array or None, default=[-0.2,11]
-            The xlimits of the plot
+            The xlimits of the plot.
         ylim : array or None, default=[-5,5]
-            The ylimits of the plot
-        
-        See Also
-        --------
-        plot_results_err : Plot the difference between the input and output values of different components showing errorbars.
+            The ylimits of the plot.
+        interactive : bool, default=False
+            Make interactive plots or not.
+        errorbar : bool, default=False
+            Whether to plot the errorbars.
      
         """
-        
+ 
         if param == 'sig':
-            array = (self.sigs_out - self.sigs_in) / self.sigs_in
+            array = (self.sig_out - self.sig_in) / self.sig_in
+            unc = self.sig_unc_out / self.sig_in
         elif param == 'vel':
             array = (self.vels_out - self.vels_in) / self.vels_in
+            unc = self.vels_unc_out / self.vels_in
         elif param == 'A':
             array = (self.As_out - self.As_in) / self.As_in
+            unc = self.As_unc_out / self.As_in
         elif param == 'flux':
             array = (self.f_out - self.f_in) / self.f_in
+            unc = self.f_unc_out / self.f_in
         
         # Store line and array globally for click selecting
         global line_of_interest, arr_of_interest, param_of_interest, xlim_of_interest, ylim_of_interest
@@ -918,64 +893,20 @@ class Spectrum():
         
         label = f'({param}_out - {param}_in)/{param}_in'
         plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
-        plt.scatter(self.AoNs_out[line], array[line], s=0.5, label='Data')
-        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5)
+        plt.axhline(0, color='lightgrey')
+        plt.scatter(self.AoNs_out[line], array[line], s=0.5, label='Data', zorder=2.5)
+        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5, zorder=2.5)
+        if errorbar == True:
+            plt.errorbar(self.AoNs_out[line], array[line], unc[line], fmt='none', zorder=2.5)
+            plt.errorbar(self.AoNs_out[line][close_0], array[line][close_0], unc[line][close_0], fmt='none', color='#ff7f0e', zorder=2.5)
         plt.xlabel('A/N')
         plt.ylabel(label)
         plt.xlim(xlim)
         plt.ylim(ylim)
         plt.legend()
         plt.show()
-        cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
-
-    def plot_results_err(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5]):
-        """
-        Plot the difference between the input and output values of different components.
-        
-        Parameters
-        ----------
-        line : int, default=0
-            Which line of the spectrum to plot for.
-        param : {'sig', 'vel', 'A', 'flux'}
-            Which parameter to plot for. 
-        xlim : array or None, default=[-0.2,11]
-            The xlimits of the plot
-        ylim : array or None, default=[-5,5]
-            The ylimits of the plot
-                
-        See Also
-        --------
-        plot_results : Plot the difference between the input and output values of different components without showing errorbars.
-   
-        """
-        
-        if param == 'sig':
-            array = (self.sigs_out - self.sigs_in) / self.sigs_in
-            unc = self.sigs_unc_out / self.sigs_in
-        elif param == 'vel':
-            array = (self.vels_out - self.vels_in) / self.vels_in
-            unc = self.vels_unc_out / self.vels_in
-        elif param == 'A':
-            array = (self.As_out - self.As_in) / self.As_in
-            unc = self.As_unc_out / self.As_in
-        elif param == 'flux':
-            array = (self.f_out - self.f_in) / self.f_in
-            unc = self.f_unc_out / self.f_in
-                
-        close_0 = self.find_not_fit(peak=line, param=param)
-
-        label = f'({param}_out - {param}_in)/{param}_in'
-        plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
-        plt.scatter(self.AoNs_out[line], array[line], s=0.5)
-        plt.errorbar(self.AoNs_out[line], array[line], unc[line], fmt='none', label='Data')
-        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5)
-        plt.errorbar(self.AoNs_out[line][close_0], array[line][close_0], unc[line][close_0], fmt='none', color='#ff7f0e')
-        plt.xlabel('A/N')
-        plt.ylabel(label)
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-        plt.legend()
-        plt.show()
+        if interactive == True:
+            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
                 
     def recover_data(self, peak=0, param='sig', ind=None):
         """
@@ -988,7 +919,7 @@ class Spectrum():
         param : {'sig', 'vel', 'A', 'flux'}, default='sig'
             Which parameter to check for.
         ind : array, defualt=None
-            Which specific elements to check, if None checks all
+            Which specific elements to check, if None checks all.
             
         Returns
         -------
@@ -1002,7 +933,7 @@ class Spectrum():
         """
         
         if param == 'sig':
-            array = (self.sigs_out - self.sigs_in) / self.sigs_in
+            array = (self.sig_out - self.sig_in) / self.sig_in
         elif param == 'vel':
             array = (self.vels_out - self.vels_in) / self.vels_in
         elif param == 'A':
@@ -1241,12 +1172,12 @@ class Spectrum():
         param : {'sig', 'vel', 'A', 'flux'}, default='sig'
             Which parameter to check for.
         ind : array, defualt=None
-            Which specific elements to check, if None checks all
+            Which specific elements to check, if None checks all.
         
         Returns
         -------
         close_0 : array
-            The indices where sigs_out is close to 0
+            The indices where sig_out is close to 0.
         """
         
         # Find where param is close to 0
