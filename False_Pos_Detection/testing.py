@@ -9,10 +9,10 @@ cutoff = 0.8
 outputs = 1
 
 # The neural network to test
-ANN = 'planetary_nebula/planetary_nebula_0_to_9_mod_ANN_0.keras'
+ANN = 'spectra_0_to_4_mod_ANN_0.keras'
 
 # The data to test on
-file = 'planetary_nebula/planetary_nebula_10_to_37_mod.txt'
+file = 'spectra_5_to_37_mod.txt'
 data = np.loadtxt(file)
 
 filepath = os.path.splitext(file)[0]
@@ -63,7 +63,7 @@ status = lines_present - YPred
     
 real_det = np.dstack(np.where((status >= 0) & (status <= 1 - cutoff)))[0]
 miss_det = np.dstack(np.where(status > 1 - cutoff))[0]
-nothing = np.dstack(np.where((status > 0 - cutoff) & (status <= 0)))[0]
+nothing = np.dstack(np.where((status > 0 - cutoff) & (status < 0)))[0]
 false_pos = np.dstack(np.where(status <= 0 - cutoff))[0]    
 
 # Confusion matrix overall

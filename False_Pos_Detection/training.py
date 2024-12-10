@@ -4,7 +4,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Sequential
 
 # Import data
-file = 'planetary_nebula/planetary_nebula_0_to_9_mod.txt'
+file = 'spectra_0_to_9_mod.txt'
 
 training_data = np.loadtxt(file)
 
