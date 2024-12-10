@@ -34,7 +34,7 @@ for i in range(len(suffixes)):
     spec.simulation()
     
     AoN_out = spec.AoNs_out
-    data_out = np.transpose(np.concatenate((AoN_out, np.ones((8, Nsim)))))
+    data_out = np.transpose(np.concatenate((AoN_out, np.ones((1, Nsim)))))
     
     header = f'first {Nsim} are full spectra, next {Nsim} is just noise'
     
@@ -46,7 +46,7 @@ for i in range(len(suffixes)):
     spec.simulation()
     AoN_out = spec.AoNs_out
     
-    empty_data = np.transpose(np.concatenate((AoN_out, np.zeros((8, Nsim)))))
+    empty_data = np.transpose(np.concatenate((AoN_out, np.zeros((1, Nsim)))))
 
     # Save data
     data_out = np.concatenate((data_out, empty_data))
