@@ -6,6 +6,7 @@ import pickle
 from matplotlib.colors import TwoSlopeNorm
 import sys
 import os
+from datetime import datetime
 
 # Point to the funcs file
 func_path = os.path.abspath('../') + '/Funcs'
@@ -63,7 +64,9 @@ class Spectrum():
         
         # For output
         self.data = np.array([])
-        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 This information'
+        self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 sig_resolution\n20 sig_sampling\n21 This information'
+        
+        self.get_data()
         
     def print_info(self):
         """
@@ -591,7 +594,7 @@ class Spectrum():
         plt.show()
         
         if interactive == True:
-            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)    
+            fig.canvas.mpl_connect('button_press_event', self.on_click)    
 
     def plot_spectrum_centre(self, y, fit, model, centre, ran, interactive=False):
         """
@@ -618,9 +621,6 @@ class Spectrum():
         
         """
         
-        global current_plot
-        current_plot = 'spectrum'
-        
         fig, ax = plt.subplots(1, len(centre))
 
         labels = ['input model + noise', 'input model', 'fitted model']
@@ -644,7 +644,10 @@ class Spectrum():
         plt.show()
         
         if interactive == True:
-            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
+            global current_plot
+            current_plot = 'spectrum'
+            
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
 
     def dump(self, matrices=False):
         """
@@ -662,14 +665,14 @@ class Spectrum():
        
         """
         
-        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sig_in, self.sig_out, self.sig_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet]
+        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sig_in, self.sig_out, self.sig_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet, self.sig_resolution, self.sig_sampling]
         
         if matrices == True:
             data.append(self.spectra_mat)
             data.append(self.model_mat)
             data.append(self.fit_mat)
             
-            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 spectra_mat\n20 model_mat\n21 fit_mat\n22 This information'
+            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 sig_resolution\n20 sig_sampling\n21 spectra_mat\n22 model_mat\n23 fit_mat\n24 This information'
         
         return data
 
@@ -695,22 +698,40 @@ class Spectrum():
                 # Try to open the data file if it exists and append the data from this run to it
                 with open(outfile, 'rb') as pickle_file:
                     in_data = pickle.load(pickle_file)
+                 
+                # Check that same resolutions used in both
+                if in_data[19] == self.sig_resolution and in_data[20] == self.sig_sampling:
+                 
+                    # Concatenate the data
+                    for i in range(len(data)):
+                        if i != 6 and i < 15:
+                            data[i] = np.concatenate((in_data[i].T, data[i].T)).T
+                        
+                        if i >= 21 and i < 24:
+                            data[i] = np.concatenate((in_data[i], data[i]))
                     
-                # Concatenate the data
-                for i in range(len(data)):
-                    if i != 6 and i!= 17:
-                        data[i] = np.concatenate((in_data[i].T, data[i].T)).T
-            
-                # Increment Nsim
-                data[17] = data[17] + in_data[17]
+                    # Increment Nsim
+                    data[17] = data[17] + in_data[17]
+                    
+                    # Add the info
+                    data.append(self.data_info)
+                    
+                    # Save the data
+                    with open(outfile, 'wb') as outfile:
+                        pickle.dump(data, outfile)
+                    outfile.close()
                 
-                # Add the info
-                data.append(self.data_info)
-                
-                # Save the data
-                with open(outfile, 'wb') as outfile:
+                else:                    
+                    dt = datetime.now().strftime("%Y%m%dT%H%M%S")
+                    
+                    print('File not updated: The same sampling and resolutions must be used throughout the file.\nData saved to {dt}-{outfile} instead')
+
+                    outfile = open(f'{dt}-{outfile}', 'wb')
+                    data.append(self.data_info)
+                    
+                    # Write the data
                     pickle.dump(data, outfile)
-                outfile.close()
+                    outfile.close()
                 
             except:
                 # Create the file
@@ -775,11 +796,13 @@ class Spectrum():
         self.peaks_no = data_in[16]
         self.Nsim = data_in[17]
         self.doublet = data_in[18]
+        self.sig_resolution = data_in[19]
+        self.sig_sampling = data_in[20]
         
-        if len(data_in) == 23:
-            self.spectra_mat = data_in[19]
-            self.model_mat = data_in[20]
-            self.fit_mat = data_in[21]
+        if len(data_in) == 25:
+            self.spectra_mat = data_in[21]
+            self.model_mat = data_in[22]
+            self.fit_mat = data_in[23]
         
         # Calculate fluxes
         self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
@@ -823,24 +846,58 @@ class Spectrum():
     
     def on_click(self, event):
         """
-        When the mouse is left double clicked on the plot show the spectrum of the closest data point, when right double clicked go back.
+        What to do when clicking interactive plots.
         
         """
                 
         x_click, y_click = event.xdata, event.ydata
-        print(event.xdata, event.ydata)
         
-        closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
-        closest_point = np.min(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
-        if event.button == 1 and current_plot == 'results' and event.dblclick == True: # Left click
+        if current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum':
+            # Upper and lower x and y limits
+            global bright_l, bright_u, interest_l, interest_u
+            bright_l = (x_click//step_of_interest) * step_of_interest
+            bright_u = bright_l + step_of_interest
+            interest_l = (y_click//step_of_interest) * step_of_interest
+            interest_u = interest_l + step_of_interest
+        else:
+            closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
+        
+        # Just scatter plots
+        # Scatter to spectrum
+        if event.button == 1 and current_plot == 'results' and event.dblclick == True:
             plt.close()
-            print(closest_point_ind, closest_point)
             self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
-        elif event.button == 3 and current_plot == 'spectrum' and event.dblclick == True: # Right click
+        # Spectrum back to scatter
+        elif event.button == 3 and current_plot == 'spectrum' and event.dblclick == True and heatmap == False and scat_size == False and heatmap_sum == False:
             plt.close()
             self.plot_results(line=line_of_interest, param=param_of_interest, xlim=xlim_of_interest, ylim=ylim_of_interest, interactive=True)
-        else:
+        # Heatmaps and scatter size plots
+        # Heatmaps/scatter size to scatter or spectrum to scatter
+        elif ((event.button == 1 and (current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum')) or (event.button == 3 and current_plot == 'spectrum')) and event.dblclick == True:
+            plt.close()
+            self.plot_slice([line_of_interest, brightest_of_interest], param_of_interest, bright_l, bright_u, interest_l, interest_u, interactive=True)
+        # Slice to heatmap
+        elif event.button == 3 and current_plot == 'slice' and heatmap == True and event.dblclick == True:
+            plt.close()
+            self.heatmap_brightest(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
+        # Slice to scatter size
+        elif event.button == 3 and current_plot == 'slice' and scat_size == True and event.dblclick == True:
+            plt.close()
+            self.scatter_size(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, step_of_interest, interactive=True)
+        # Slice to heatmap sum
+        elif event.button == 3 and current_plot == 'slice' and heatmap_sum == True and event.dblclick == True:
+            plt.close()
+            self.heatmap_sum(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
+        # Slice to spectrum
+        elif event.button == 1 and current_plot == 'slice' and event.dblclick == True:            
+            if event.inaxes in [axis[0]]:
+                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
+            if event.inaxes in [axis[1]]:
+                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[brightest_of_interest] - x_click)**2 + (arr_of_interest[brightest_of_interest] - y_click)**2))
+            plt.close()
+            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
             pass
+
             
     def plot_results(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], interactive=False, errorbar=False):
         """
@@ -876,17 +933,6 @@ class Spectrum():
             array = (self.f_out - self.f_in) / self.f_in
             unc = self.f_unc_out / self.f_in
         
-        # Store line and array globally for click selecting
-        global line_of_interest, arr_of_interest, param_of_interest, xlim_of_interest, ylim_of_interest
-        line_of_interest = line
-        arr_of_interest = array
-        param_of_interest = param
-        xlim_of_interest = xlim
-        ylim_of_interest = ylim
-        
-        global current_plot
-        current_plot = 'results'
-        
         close_0 = self.find_not_fit(peak=line, param=param)
         
         fig, ax = plt.subplots()
@@ -906,7 +952,82 @@ class Spectrum():
         plt.legend()
         plt.show()
         if interactive == True:
-            cid = fig.canvas.mpl_connect('button_press_event', self.on_click)
+            global line_of_interest, arr_of_interest, param_of_interest, xlim_of_interest, ylim_of_interest
+            line_of_interest = line
+            arr_of_interest = array
+            param_of_interest = param
+            xlim_of_interest = xlim
+            ylim_of_interest = ylim
+            
+            global current_plot, heatmap, scat_size, heatmap_sum
+            current_plot = 'results'
+            heatmap = False
+            scat_size = False
+            heatmap_sum = False
+            
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
+
+    def plot_results_density(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], step=1):
+        """
+        Plot the difference between the input and output values of different components.
+        
+        Parameters
+        ----------
+        line : int, default=0
+            Which line of the spectrum to plot for.
+        param : {'sig', 'vel', 'A', 'flux'}
+            Which parameter to plot for. 
+        xlim : array or None, default=[-0.2,11]
+            The xlimits of the plot.
+        ylim : array or None, default=[-5,5]
+            The ylimits of the plot.
+        step : float, default=1
+            The step size for the bins.
+            
+        """
+ 
+        if param == 'sig':
+            array = (self.sig_out - self.sig_in) / self.sig_in
+        elif param == 'vel':
+            array = (self.vels_out - self.vels_in) / self.vels_in
+        elif param == 'A':
+            array = (self.As_out - self.As_in) / self.As_in
+        elif param == 'flux':
+            array = (self.f_out - self.f_in) / self.f_in
+        
+        # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
+        # Where AoN <= 12, gives array of all 2D indices that have this. Remove any index that doesn't appear 8 times (peaks_no times)
+        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)[0]
+                
+        interest_array = array[line][ind]
+        interest_AoN = self.AoNs_out[line][ind]
+        
+        # Also keep d[param]/[param] between -5 and 5
+        ind = np.where(np.abs(interest_array) <=5)
+        
+        interest_array = interest_array[ind]
+        interest_AoN = interest_AoN[ind]
+        
+        x_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
+        y_vals = np.arange(np.floor(min(interest_array)), np.ceil(max(interest_array)), step)
+        
+        no_points = np.empty((len(x_vals) - 1, len(y_vals) - 1))
+
+        for i in range(1, len(x_vals)):
+            ind_x = (interest_AoN < x_vals[i]) * (interest_AoN > x_vals[i] - step)
+
+            for j in range(1, len(y_vals)):
+                ind_y = (interest_array < y_vals[j]) * (interest_array > y_vals[j] - step)
+                
+                no_points[i-1][j-1] = len(interest_AoN[ind_y*ind_x])
+                
+        label = f'({param}_out - {param}_in)/{param}_in'
+        plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
+        pc = plt.pcolormesh(x_vals, y_vals, no_points.T, cmap='plasma', vmax=min(no_points.max(), np.mean(no_points[no_points > 0]) + 3*np.std(no_points[no_points > 0])))
+        plt.colorbar(pc)
+        plt.xlabel('A/N')
+        plt.ylabel(label)
+        plt.show()
                 
     def recover_data(self, peak=0, param='sig', ind=None):
         """
@@ -949,7 +1070,7 @@ class Spectrum():
         
         return arr, std, med
 
-    def heatmap_sum(self, param, line, brightest=4, text=True, step=1, transparency=False):
+    def heatmap_sum(self, param, line, value, brightest=4, text=True, step=1, transparency=False, interactive=False):
         """
         Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
 
@@ -959,6 +1080,8 @@ class Spectrum():
             Which parameter to check for.
         line : int
             The line of interest.
+        value : {'std', 'median'}
+            Plot the standard deviations or the medians.
         brightest : int, default=4
             The brightest line (default corrseponds to H alpha in the normal input structure).
         text : bool
@@ -967,6 +1090,8 @@ class Spectrum():
             The step size for the bins.   
         transparency : bool, default=False
             Change the transparency of the cell depending on the number of points in this range.
+        interactive : bool, default=False
+            Make interactive plots or not.
             
         See Also
         --------
@@ -1011,51 +1136,79 @@ class Spectrum():
                 medians.append(np.median(interest_val[ind_y*ind_x]))
         
         if transparency == True:
-            no_points_norm = np.log10(no_points )/ np.log10(no_points.max())
-            no_points_norm = np.nan_to_num(no_points_norm, neginf=0)
+            no_points = np.log10(no_points )/ np.log10(no_points.max())
+            no_points = np.nan_to_num(no_points, neginf=0)
         else:
-            no_points_norm = np.ones_like(no_points)
+            no_points = np.ones_like(no_points)
 
 
         stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
+        fig, ax = plt.subplots()
+
         # Plot the standard deviations
-        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points_norm.T)
-        plt.colorbar(pc)
-        plt.title(f'Standard deviation of {label}')
-        plt.xlabel('Sum of A/N of all lines')
-        plt.ylabel(f'A/N of line {line}')
-        # Text
-        if text == True:
-            for i in range(len(x_vals)-1):
-                for j in range(len(y_vals)-1):
-                    if np.isnan(stds.T[j][i]):
-                        pass
-                    else:
-                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 2), ha='center', va='center', color='w', fontsize='x-small')
-      
+        if value == 'std':
+            pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points.T)
+            plt.colorbar(pc)
+            plt.title(f'Standard deviation of {label}')
+            plt.xlabel('Sum of A/N of all lines')
+            plt.ylabel(f'A/N of line {line}')
+            # Text
+            if text == True:
+                for i in range(len(x_vals)-1):
+                    for j in range(len(y_vals)-1):
+                        if np.isnan(stds.T[j][i]):
+                            pass
+                        else:
+                            plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 2), ha='center', va='center', color='w', fontsize='x-small')
+                            
+        # Plot the medians
+        elif  value == 'median':
+            try:
+                norm = TwoSlopeNorm(vmin=max(medians[np.isfinite(medians)].min(), np.mean(medians[np.isfinite(medians)]) - 3*np.std(medians[np.isfinite(medians)])), vcenter=0, vmax=min(medians[np.isfinite(medians)].max(), np.mean(medians[np.isfinite(medians)]) + 3*np.std(medians[np.isfinite(medians)])))
+            except:
+                norm = TwoSlopeNorm(vcenter=0)
+            pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points.T)
+            plt.colorbar(pc)
+            plt.title(f'Median of {label}')
+            plt.xlabel('Sum of A/N of all lines')
+            plt.ylabel(f'A/N of line {line}')
+            # Text
+            if text == True:
+                for i in range(len(x_vals)-1):
+                    for j in range(len(y_vals)-1):
+                        if np.isnan(medians.T[j][i]) or np.isinf(medians.T[j][i]):
+                            pass
+                        else:
+                            plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 3), ha='center', va='center', color='k', fontsize='x-small')
         plt.show()
+        
+        if interactive == True:
+            # Store the relevant data globally for interactive stuff
+            global line_of_interest, param_of_interest, brightest_of_interest, step_of_interest, show_text, transparent, arr_of_interest, value_of_interest
+            line_of_interest = line
+            param_of_interest = param
+            brightest_of_interest = brightest
+            step_of_interest = step
+            show_text = text
+            transparent = transparency
+            value_of_interest = value
+            if value == 'std':
+                arr_of_interest = stds
+            elif value == 'median':
+                arr_of_interest = medians
+            
+            global current_plot, heatmap, scat_size, heatmap_sum
+            current_plot = 'heatmap sum'
+            heatmap = False
+            scat_size = False
+            heatmap_sum = True
+            
+            # Click handling
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
 
-         # Plot the medians
-        norm = TwoSlopeNorm(vcenter=0)
-        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points_norm.T)
-        plt.colorbar(pc)
-        plt.title(f'Median of {label}')
-        plt.xlabel('Sum of A/N of all lines')
-        plt.ylabel(f'A/N of line {line}')
-        # Text
-        if text == True:
-            for i in range(len(x_vals)-1):
-                for j in range(len(y_vals)-1):
-                    if np.isnan(medians.T[j][i]):
-                        pass
-                    else:
-                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 3), ha='center', va='center', color='k', fontsize='x-small')
-                
-        plt.show()
-
-    def heatmap_brightest(self, param, line, brightest=4, text=True, step=1, transparency=False):
+    def heatmap_brightest(self, param, line, value, brightest=4, text=True, step=1, transparency=False, interactive=False):
         """
         Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line.
 
@@ -1065,6 +1218,8 @@ class Spectrum():
             Which parameter to check for.
         line : int
             The line of interest.
+        value : {'std', 'median'}
+            Plot the standard deviations or the medians.
         brightest : int, default=4
             The brightest line (default corresponds to H alpha in the normal input structure).
         text : bool
@@ -1073,6 +1228,8 @@ class Spectrum():
             The step size for the bins.
         transparency : bool, default=False
             Change the transparency of the cell depending on the number of points in this range.
+        interactive : bool, default=False
+            Make interactive plots or not.   
             
         See Also
         --------
@@ -1117,50 +1274,158 @@ class Spectrum():
                 medians.append(np.median(interest_val[ind_y*ind_x]))
         
         if transparency == True:
-            no_points_norm = np.log10(no_points )/ np.log10(no_points.max())
-            no_points_norm = np.nan_to_num(no_points_norm, neginf=0)
+            no_points = np.log10(no_points)/ np.log10(no_points.max())
+            no_points = np.nan_to_num(no_points, neginf=0)
         else:
-            no_points_norm = np.ones_like(no_points)
+            no_points = np.ones_like(no_points)
 
 
         stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
+        fig, ax = plt.subplots()
+
         # Plot the standard deviations
-        pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points_norm.T)
-        plt.colorbar(pc)
-        plt.title(f'Standard deviation of {label}')
-        plt.xlabel(f'A/N of line {brightest}')
-        plt.ylabel(f'A/N of line {line}')
-        # Text
-        if text == True:
-            for i in range(len(x_vals)-1):
-                for j in range(len(y_vals)-1):
-                    if np.isnan(stds.T[j][i]):
-                        pass
-                    else:
-                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 3), ha='center', va='center', color='w', fontsize='x-small')
-        
-        plt.show()
+        if value == 'std':
+            pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points.T, vmax=min(stds[np.isfinite(stds)].max(), np.mean(stds[stds > 0]) + 3*np.std(stds[stds > 0])))
+            plt.colorbar(pc)
+            plt.title(f'Standard deviation of {label}')
+            plt.xlabel(f'A/N of line {brightest}')
+            plt.ylabel(f'A/N of line {line}')
+            # Text
+            if text == True:
+                for i in range(len(x_vals)-1):
+                    for j in range(len(y_vals)-1):
+                        if np.isnan(stds.T[j][i]):
+                            pass
+                        else:
+                            plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(stds.T[j][i], 3), ha='center', va='center', color='w', fontsize='x-small')
 
-         # Plot the medians
-        norm = TwoSlopeNorm(vcenter=0)
-        pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points_norm.T)
-        plt.colorbar(pc)
-        plt.title(f'Median of {label}')
-        plt.xlabel(f'A/N of line {brightest}')
-        plt.ylabel(f'A/N of line {line}')
-        # Text
-        if text == True:
-            for i in range(len(x_vals)-1):
-                for j in range(len(y_vals)-1):
-                    if np.isnan(medians.T[j][i]):
-                        pass
-                    else:
-                        plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 2), ha='center', va='center', color='k', fontsize='x-small')
+        # Plot the medians
+        elif value == 'median':
+            try:
+                norm = TwoSlopeNorm(vmin=max(medians[np.isfinite(medians)].min(), np.mean(medians[np.isfinite(medians)]) - 3*np.std(medians[np.isfinite(medians)])), vcenter=0, vmax=min(medians[np.isfinite(medians)].max(), np.mean(medians[np.isfinite(medians)]) + 3*np.std(medians[np.isfinite(medians)])))
+            except:
+                norm = TwoSlopeNorm(vcenter=0)
+            pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points.T)
+            plt.colorbar(pc)
+            plt.title(f'Median of {label}')
+            plt.xlabel(f'A/N of line {brightest}')
+            plt.ylabel(f'A/N of line {line}')
+            # Text
+            if text == True:
+                for i in range(len(x_vals)-1):
+                    for j in range(len(y_vals)-1):
+                        if np.isnan(medians.T[j][i]) or np.isinf(medians.T[j][i]):
+                            pass
+                        else:
+                            plt.text(x_vals[i]+step/2, y_vals[j]+step/2, np.round(medians.T[j][i], 2), ha='center', va='center', color='k', fontsize='x-small')
+        plt.show()
+        
+        if interactive == True:
+            # Store the relevant data globally for interactive stuff
+            global line_of_interest, param_of_interest, brightest_of_interest, step_of_interest, show_text, transparent, arr_of_interest, value_of_interest
+            line_of_interest = line
+            param_of_interest = param
+            brightest_of_interest = brightest
+            step_of_interest = step
+            show_text = text
+            transparent = transparency
+            value_of_interest = value
+            if value == 'std':
+                arr_of_interest = stds
+            elif value == 'median':
+                arr_of_interest = medians
+            
+            global current_plot, heatmap, scat_size, heatmap_sum
+            current_plot = 'heatmap'
+            heatmap = True
+            scat_size = False
+            heatmap_sum = False
+            
+            # Click handling
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
+            
+    def plot_slice(self, lines, param, bright_l, bright_u, interest_l, interest_u, xlim=[-0.2, 11], ylim=[-5, 5], interactive=False):
+        """
+        Plot the difference between the input and output values of different components for a certain slice only.
+        
+        Parameters
+        ----------
+        lines : array
+            Which lines of the spectrum to plot for.
+        param : {'sig', 'vel', 'A', 'flux'}
+            Which parameter to plot for.
+        bright_l : float
+            The lower bound to the brightest line A/N.
+        bright_u : float
+            The upper bound to the brightest line A/N.
+        interest_l : float
+            The lower bound to the line of interest A/N.
+        interest_u : float
+            The upper bound to the line of interest A/N.
+        xlim : array or None, default=[-0.2,11]
+            The xlimits of the plot.
+        ylim : array or None, default=[-5,5]
+            The ylimits of the plot.
+        interactive : bool, default=False
+            Make interactive plots or not.
+        """
+ 
+        if param == 'sig':
+            array = (self.sig_out - self.sig_in) / self.sig_in
+        elif param == 'vel':
+            array = (self.vels_out - self.vels_in) / self.vels_in
+        elif param == 'A':
+            array = (self.As_out - self.As_in) / self.As_in
+        elif param == 'flux':
+            array = (self.f_out - self.f_in) / self.f_in
+        
+        # Store line and array globally for click selecting 
+        
+        
+        # Get the points of interest
+        ind_int = (self.AoNs_out[lines[0]] < interest_u) * (self.AoNs_out[lines[0]] > interest_l)
+        ind_bright = (self.AoNs_out[lines[1]] < bright_u) * (self.AoNs_out[lines[1]] > bright_l)
+        
+        fig, ax = plt.subplots(2, 1)
+        
+        label = f'({param}_out - {param}_in)/{param}_in'
+        fig.suptitle(f'{label} against A/N')
+        fig.supylabel(label)
+        fig.supxlabel('A/N')
+        
+        ax[0].scatter(self.AoNs_out[lines[0]], array[lines[0]], s=0.5, label='All data')
+        ax[0].scatter(self.AoNs_out[lines[0]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=0.5, label='Data points\nof interest')
+        ax[0].set_ylabel(f'Line {lines[0]}')
+        ax[0].set_xlim(xlim)
+        ax[0].set_ylim(ylim)
+        ax[0].legend()
+        
+        ax[1].scatter(self.AoNs_out[lines[1]], array[lines[0]], s=0.5)
+        ax[1].scatter(self.AoNs_out[lines[1]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=0.5)
+        ax[1].set_ylabel(f'Line {lines[1]}')
+        ax[1].set_xlim(xlim)
+        ax[1].set_ylim(ylim)
 
         plt.show()
         
+        if interactive == True:
+            global line_of_interest, param_of_interest, brightest_of_interest, arr_of_interest
+            line_of_interest = lines[0]
+            param_of_interest = param
+            brightest_of_interest = lines[1]
+            arr_of_interest = array
+            
+            
+            global current_plot
+            current_plot = 'slice'
+            
+            global axis
+            axis = ax
+            
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
+
     def find_not_fit(self, peak=0, param='sig', ind=None):
         """
         Count the number of lines in the data that no fit was found for them based on having a very low standard deviation.
@@ -1187,7 +1452,7 @@ class Spectrum():
         return close_0
         
         
-    def scatter_size(self, param, line, brightest=4, step=1):
+    def scatter_size(self, param, line, value, brightest=4, step=1, interactive=False):
         """
         Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
 
@@ -1197,15 +1462,20 @@ class Spectrum():
             Which parameter to check for.
         line : int
             The line of interest.
+        value : {'std', 'median'}
+            Plot the standard deviations or the medians.
         brightest : int, default=4
             The brightest line (default corresponds to H alpha in the normal input structure).
         step : float, default=1
             The step size for the bins.
+        interactive : bool, default=False
+            Make interactive plots or not.
             
         See Also
         --------
         heatmap_sum : Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
-     
+        heatmap_brightest : Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line.
+
         """
         
         label = f'({param}_out - {param}_in)/{param}_in'
@@ -1248,28 +1518,53 @@ class Spectrum():
         stds = np.reshape(stds, (len(x_vals)-1, len(y_vals)-1))
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
-        # Plot the standard deviations
-        plt.title(f'Standard deviation of {label}')
-        plt.xlabel(f'A/N of line {brightest}')
-        plt.ylabel(f'A/N of line {line}')
-        # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
-        # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
-        plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
-        plt.scatter(mesh[0], mesh[1], s=np.log10(no_points.T)*10, c=stds.T, cmap='inferno')
-        plt.colorbar()
-        plt.show()
+        fig, ax = plt.subplots()
 
-        #  # Plot the medians
-        norm = TwoSlopeNorm(vcenter=0)
-        # pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic')
-        # plt.colorbar(pc)
-        plt.title(f'Median of {label}')
-        plt.xlabel(f'A/N of line {brightest}')
-        plt.ylabel(f'A/N of line {line}')
-        # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
-        # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
-        plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
-        plt.scatter(mesh[0], mesh[1], s=np.log10(no_points.T)*10, c=medians.T, cmap='coolwarm', norm=norm)
-        plt.colorbar()
+        # Plot the standard deviations
+        if value == 'std':
+            plt.title(f'Standard deviation of {label}')
+            plt.xlabel(f'A/N of line {brightest}')
+            plt.ylabel(f'A/N of line {line}')
+            # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
+            # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
+            plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
+            plt.scatter(mesh[0], mesh[1], s=np.log(no_points.T)**2, c=stds.T, cmap='inferno', vmax=min(stds[np.isfinite(stds)].max(), np.mean(stds[stds > 0]) + 3*np.std(stds[stds > 0])))
+            plt.colorbar()
+
+        # Plot the medians
+        elif value == 'median':  
+            try:
+                norm = TwoSlopeNorm(vmin=max(medians[np.isfinite(medians)].min(), np.mean(medians[np.isfinite(medians)]) - 3*np.std(medians[np.isfinite(medians)])), vcenter=0, vmax=min(medians[np.isfinite(medians)].max(), np.mean(medians[np.isfinite(medians)]) + 3*np.std(medians[np.isfinite(medians)])))
+            except:
+                norm = TwoSlopeNorm(vcenter=0)
+            plt.title(f'Median of {label}')
+            plt.xlabel(f'A/N of line {brightest}')
+            plt.ylabel(f'A/N of line {line}')
+            # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
+            # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
+            plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
+            plt.scatter(mesh[0], mesh[1], s=np.log(no_points.T)**2, c=medians.T, cmap='coolwarm', norm=norm)
+            plt.colorbar()
         plt.show()
+        
+        if interactive == True:
+            # Store the relevant data globally for interactive stuff
+            global line_of_interest, param_of_interest, brightest_of_interest, step_of_interest, arr_of_interest, value_of_interest
+            line_of_interest = line
+            param_of_interest = param
+            brightest_of_interest = brightest
+            step_of_interest = step
+            value_of_interest = value
+            if value == 'std':
+                arr_of_interest = stds
+            elif value == 'median':
+                arr_of_interest = medians
+                
+            global current_plot, heatmap, scat_size, heatmap_sum
+            current_plot = 'scatter size'
+            heatmap = False
+            scat_size = True
+            heatmap_sum = False
+            
+            fig.canvas.mpl_connect('button_press_event', self.on_click)
         
