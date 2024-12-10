@@ -46,7 +46,7 @@ cutoffs = np.arange(0.1, 1.0, 0.1)
 for cutoff in cutoffs:
     real_det = np.dstack(np.where((status >= 0) & (status <= 1 - cutoff)))[0]
     miss_det = np.dstack(np.where(status > 1 - cutoff))[0]
-    nothing = np.dstack(np.where((status > 0 - cutoff) & (status <= 0)))[0]
+    nothing = np.dstack(np.where((status > 0 - cutoff) & (status < 0)))[0]
     false_pos = np.dstack(np.where(status <= 0 - cutoff))[0]
     
     if outputs != 1:
@@ -74,59 +74,16 @@ for cutoff in cutoffs:
     plt.hist(false_AoNs, bins=hbin, density=density, label='false positives', histtype='step', cumulative=cumulative, stacked=stacked)
     
     if cumulative == True:
-        plt.title(f'A/N cumulative distribution of lines detected by\n{ANN_name} in {test_name}')
+        plt.title(f'A/N cumulative distribution of lines detected by\n{ANN_name} in {test_name}, cutoff={cutoff}')
     else:
-        plt.title(f'A/N distribution of lines detected by\n{ANN_name} in {test_name}')
+        plt.title(f'A/N distribution of lines detected by\n{ANN_name} in {test_name}, cutoff={cutoff}')
     plt.xlabel('A/N out')
     plt.legend()
     
     plt.show()
 
 
-
-# Do this separately for each line
-if outputs == len(test_data[0]):
-    real_det = [] # real detections
-    miss_det = [] # missed detections
-    false_pos = [] # false positives
-    nothing = [] # true negatives
-    
-    real_AoNs = []
-    miss_AoNs = []
-    noth_AoNs = []
-    false_AoNs = []
-    
-    for i in range(len(status[0])):
-        real_det.append(np.where((status[:,i] >= 0) & (status[:,i] <= 1 - cutoff))[0])
-        miss_det.append(np.where(status[:,i] > 1 - cutoff)[0])
-        nothing.append(np.where((status[:,0] > 0 - cutoff) & (status[:,0] <= 0))[0])
-        false_pos.append(np.where(status[:,i] <= 0 - cutoff)[0])
-    
-        real_AoNs.append(data[real_det[i], i])
-        miss_AoNs.append(data[miss_det[i], i])
-        noth_AoNs.append(data[nothing[i], i])
-        false_AoNs.append(data[false_pos[i], i])
-    
-    
-        hbin = np.linspace(0, np.median(real_AoNs[i]) + 3*np.std(real_AoNs[i]), no_bins)
-    
-        plt.hist(real_AoNs[i], bins=hbin, density=density, label='real detections', histtype='step', cumulative=cumulative, stacked=stacked)
-        plt.hist(miss_AoNs[i], bins=hbin, density=density, label='missed detections', histtype='step', cumulative=cumulative, stacked=stacked)
-        plt.hist(noth_AoNs[i], bins=hbin, density=density, label='true negatives', histtype='step', cumulative=cumulative, stacked=stacked)
-        plt.hist(false_AoNs[i], bins=hbin, density=density, label='false positives', histtype='step', cumulative=cumulative, stacked=stacked)
-    
-    
-        if cumulative == True:
-            plt.title(f'A/N cumulative distribution of lines detected by {ANN_name}\nin {test_name} in line {i}')
-        else:
-            plt.title(f'A/N distribution of lines detected by {ANN_name}\nin {test_name} in line {i}')
-        plt.xlabel('A/N out')
-        plt.legend()
-    
-        plt.show()
-
-
-# # Plot different cutoffs of AoN
+# Plot different cutoffs of AoN
 ind_over_1 = real_AoNs > 1
 ind_over_2 = real_AoNs > 2
 density = False
