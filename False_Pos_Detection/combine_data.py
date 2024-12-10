@@ -4,11 +4,11 @@ import datetime
 
 
 # Find all the files of data
-folders = ['planetary_nebula']
+folders = ['planetary_nebula', 'seyfert', 'star_forming', 'LINER']
 
 # Number of files from each folder to combine, takes from start_file to end_file
-start_file = 0
-end_file = 9
+start_file = 5
+end_file = 37
 
 files_in = []
 

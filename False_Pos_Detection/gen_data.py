@@ -1,15 +1,15 @@
 import numpy as np
 import sys
 import os
-import datetime
 
+# Add the spectrum object folder to the path
 spec_path = os.path.abspath('../') + '/Spectrum_Obj'
 sys.path.insert(0, spec_path)
 
 from spectrum_obj import Spectrum
 
 
-Nsim = 1000
+Nsim = 100
 
 
 suffixes = ['Sy', 'SF', 'PN', 'LINER']
@@ -17,9 +17,9 @@ suffixes = ['Sy', 'SF', 'PN', 'LINER']
 labels = ['seyfert', 'star_forming', 'planetary_nebula', 'LINER']
 
 
-    
+# Loop over each of the types of data
 for i in range(len(suffixes)):
-    print(datetime.datetime.now())
+    # Keep track of which one is being generated now
     print(labels[i])
     
     # Generate Spectrum object
@@ -30,9 +30,9 @@ for i in range(len(suffixes)):
     spec.get_data()
     
     # Generate actual amplitudes
-    print(datetime.datetime.now())
     print("Generating full spectra")
     spec.simulation()
+    
     AoN_out = spec.AoNs_out
     data_out = np.transpose(np.concatenate((AoN_out, np.ones((8, Nsim)))))
     
@@ -40,15 +40,15 @@ for i in range(len(suffixes)):
     
     
     # Generate false positives
-    print(datetime.datetime.now())
     print('Generating false positives')
     spec.AoN_min = 0
     spec.AoN_max = 0
     spec.simulation()
     AoN_out = spec.AoNs_out
     
-    # Save data
     empty_data = np.transpose(np.concatenate((AoN_out, np.zeros((8, Nsim)))))
+
+    # Save data
     data_out = np.concatenate((data_out, empty_data))
     
     name = labels[i]
@@ -59,6 +59,7 @@ for i in range(len(suffixes)):
     except:
         pass
     
+    # Give it the next number
     files_present = [f for f in os.listdir(name) if os.path.isfile(os.path.join(name, f)) and f[:len(name)] == name and f[-4:] == ".txt" and 'all' not in f]
     if len(files_present) < 10:
         file_out = f'{name}/{name}_0{len(files_present)}.txt'
