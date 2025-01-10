@@ -112,59 +112,6 @@ plt.text(1, 0, np.round(confusion[0][1], 5), ha='center', backgroundcolor='yello
 plt.text(1, 1, np.round(confusion[1][1], 5), ha='center', backgroundcolor='w')
 plt.show()
 
-
-# Separately for each line
-
-output = []
-
-for i in range(len(lines_present[0])):
-    confusion = np.array([[np.unique(real_det[:,1], return_counts=True)[1][i], np.unique(false_pos[:,1], return_counts=True)[1][i]], [np.unique(miss_det[:,1], return_counts=True)[1][i], np.unique(nothing[:,1], return_counts=True)[1][i]]], dtype='f')
-    
-    ax = plt.gca()
-    ax.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
-    ax.xaxis.set_label_position('top') 
-    ax.xaxis.set_ticks_position('none') 
-    ax.yaxis.set_ticks_position('none') 
-    plt.imshow(confusion, cmap='Greys')
-    plt.colorbar()
-    plt.xticks([0, 1], ['Line present', 'Line not present'])
-    plt.yticks([0, 1], ['Line detected', 'Line not detected'], rotation='vertical', va='center')
-    plt.ylabel('Is the line detected?')
-    plt.xlabel('Is the line present?')
-    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN_name} for line {i}')
-    plt.text(0, 0, int(confusion[0][0]), ha='center', backgroundcolor='w')
-    plt.text(0, 1, int(confusion[1][0]), ha='center', backgroundcolor='w')
-    plt.text(1, 0, int(confusion[0][1]), ha='center', backgroundcolor='yellow')
-    plt.text(1, 1, int(confusion[1][1]), ha='center', backgroundcolor='w')
-    plt.show()
-    
-    # Relative values
-    no_false, no_lines = np.unique(lines_present[:,0], return_counts=True)[1]
-
-    confusion[:,0] /= no_lines
-    confusion[:,1] /= no_false
-
-    ax = plt.gca()
-    ax.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
-    ax.xaxis.set_label_position('top') 
-    ax.xaxis.set_ticks_position('none') 
-    ax.yaxis.set_ticks_position('none') 
-    plt.imshow(confusion, cmap='Greys', vmin=0.0, vmax=1.0)
-    plt.colorbar()
-    plt.xticks([0, 1], ['Line present', 'Line not present'])
-    plt.yticks([0, 1], ['Line detected', 'Line not detected'], rotation='vertical', va='center')
-    plt.ylabel('Is the line detected?')
-    plt.xlabel('Is the line present?')
-    plt.title(f'Confusion matrix for all lines in {test_name}\nusing {ANN_name} for line {i}')
-    plt.text(0, 0, np.round(confusion[0][0], 5), ha='center', backgroundcolor='w')
-    plt.text(0, 1, np.round(confusion[1][0], 5), ha='center', backgroundcolor='w')
-    plt.text(1, 0, np.round(confusion[0][1], 5), ha='center', backgroundcolor='yellow')
-    plt.text(1, 1, np.round(confusion[1][1], 5), ha='center', backgroundcolor='w')
-    plt.show()
-    
-    
-    output.append(f'{confusion[0][0]}, {confusion[0][1]}, {confusion[1][0]}, {confusion[1][1]}')
-
 # # Save the confusion matrix as a file
 # f = open(f'{ANN_path}/confusion_{ANN_name}_{test_name}.txt', 'w')
 
