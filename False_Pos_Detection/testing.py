@@ -45,7 +45,7 @@ plt.hist(YPred[np.where(YPred < cutoff)[0]], bins=hbin, density=False, label='No
 plt.hist(YPred[np.where(YPred > cutoff)[0]], bins=hbin, density=False, label='Potential Detections')
 plt.xlabel('Predicted likelihood of being a real detection by network')
 plt.ylabel('Number of spectra')
-plt.title(f'{ANN_name} trained network predicting {test_name} for peak {i}')
+plt.title(f'{ANN_name} trained network predicting {test_name}')
 plt.yscale('log')
 plt.show()
 
