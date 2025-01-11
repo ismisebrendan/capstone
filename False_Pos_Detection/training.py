@@ -44,6 +44,11 @@ print(f'Accuracy: {accuracy}')
 # Save the model
 filepath = os.path.splitext(file)[0]
 name = filepath.split('/')[-1]
+name = name.split('_')[0:-4]
+if len(name) == 1:
+    name = name[0]
+else:
+    name = '_'.join(name)
 
 folder = filepath.split('/')[0:-1]
 folder = '/'.join(folder)
