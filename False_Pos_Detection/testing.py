@@ -9,10 +9,10 @@ cutoff = 0.8
 outputs = 1
 
 # The neural network to test
-ANN = 'spectra_0_to_4_mod_ANN_0.keras'
+ANN = 'LINER/LINER_ANN_0.keras'
 
 # The data to test on
-file = 'spectra_5_to_37_mod.txt'
+file = 'LINER/LINER_10_to_37.txt'
 data = np.loadtxt(file)
 
 filepath = os.path.splitext(file)[0]
