@@ -31,14 +31,6 @@ model = tf.keras.models.load_model(ANN)
 # YPred is the predicted value from the network
 YPred = model.predict(test_data, verbose=1)
 
-predicted_data = np.hstack((test_data, YPred))
-
-# np.savetxt(f'{ANN_path}/Predicted_Detections_in_{test_name}_with_{ANN_name}.dat', predicted_data)
-
-# Highlighting potential hits
-potential = predicted_data[np.unique(np.where(YPred > cutoff)[0]),:]
-# np.savetxt(f'{ANN_path}/Potential_Detections_in_{test_name}_with_{ANN_name}.dat', potential)
-
 # Create histograms for each peak
 hbin = np.linspace(min(YPred), max(YPred), num=100).reshape(-1)
 plt.hist(YPred[np.where(YPred < cutoff)[0]], bins=hbin, density=False, label='Non-Detections')
