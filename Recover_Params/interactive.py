@@ -20,8 +20,8 @@ spec_a = Spectrum('lines_in.txt', 'fitting.txt', Nsim=10)
 
 # Import the data
 spec_a = Spectrum('lines_in.txt', 'fitting.txt')
-data = spec_a.read_pickle('spectra_data_out_drive.pickle')
-spec_a.read_pickle('spectra_data_out_drive.pickle')
+data = spec_a.read_pickle('spectra_data_out_drive_independent.pickle')
+spec_a.read_pickle('spectra_data_out_drive_independent.pickle')
 data_in = spec_a.pickle_in
 
 spec_a.overwrite_all(data_in)

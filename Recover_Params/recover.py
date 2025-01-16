@@ -25,7 +25,7 @@ from spectrum_obj import Spectrum
 
 # Import the data
 spec_in = Spectrum('lines_in.txt', 'fitting.txt')
-spec_in.read_pickle('spectra_data_out_drive.pickle')
+spec_in.read_pickle('spectra_data_out_drive_independent.pickle')
 data_in = spec_in.pickle_in
 spec_in.overwrite_all(data_in)
 
