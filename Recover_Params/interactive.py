@@ -12,24 +12,24 @@ from spectrum_obj import Spectrum
 
 spec_a = Spectrum('lines_in.txt', 'fitting.txt', Nsim=10)
 
-# Run simulation
-spec_a.simulation(plotting=False)
+# # Run simulation
+# spec_a.simulation(plotting=False)
 
-# Save the data
-spec_a.output(overwrite=False, matrices=True, outfile='spectra_data_out.pickle')
+# # Save the data
+# spec_a.output(overwrite=False, matrices=True, outfile='spectra_data_out.pickle')
 
 # Import the data
 spec_a = Spectrum('lines_in.txt', 'fitting.txt')
-data = spec_a.read_pickle('spectra_data_out.pickle')
-spec_a.read_pickle('spectra_data_out.pickle')
+data = spec_a.read_pickle('spectra_data_out_drive.pickle')
+spec_a.read_pickle('spectra_data_out_drive.pickle')
 data_in = spec_a.pickle_in
 
 spec_a.overwrite_all(data_in)
 
 
-spec_a.plot_results(line=4, param='flux', interactive=True)
+# spec_a.plot_results(line=4, param='flux', interactive=True)
 
 
-spec_a.heatmap_brightest(param='flux', line=0, value='median', text=False, step=0.5, interactive=True)
+# spec_a.heatmap_brightest(param='flux', line=0, value='median', text=False, step=1, interactive=True)
 
-spec_a.scatter_size(param='flux', line=0, value='median', step=0.5, interactive=True)
+spec_a.scatter_size(param='flux', line=0, value='median', step=1, interactive=True)

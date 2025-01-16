@@ -940,8 +940,8 @@ class Spectrum():
         label = f'({param}_out - {param}_in)/{param}_in'
         plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
         plt.axhline(0, color='lightgrey')
-        plt.scatter(self.AoNs_out[line], array[line], s=0.5, label='Data', zorder=2.5)
-        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=0.5, zorder=2.5)
+        plt.scatter(self.AoNs_out[line], array[line], s=2, label='Data', zorder=2.5)
+        plt.scatter(self.AoNs_out[line][close_0], array[line][close_0], s=2, zorder=2.5)
         if errorbar == True:
             plt.errorbar(self.AoNs_out[line], array[line], unc[line], fmt='none', zorder=2.5)
             plt.errorbar(self.AoNs_out[line][close_0], array[line][close_0], unc[line][close_0], fmt='none', color='#ff7f0e', zorder=2.5)
@@ -1149,6 +1149,8 @@ class Spectrum():
 
         # Plot the standard deviations
         if value == 'std':
+            ax = plt.gca()  
+            ax.set_facecolor('white')
             pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points.T)
             plt.colorbar(pc)
             plt.title(f'Standard deviation of {label}')
@@ -1165,6 +1167,8 @@ class Spectrum():
                             
         # Plot the medians
         elif  value == 'median':
+            ax = plt.gca()  
+            ax.set_facecolor('black')
             try:
                 norm = TwoSlopeNorm(vmin=max(medians[np.isfinite(medians)].min(), np.mean(medians[np.isfinite(medians)]) - 3*np.std(medians[np.isfinite(medians)])), vcenter=0, vmax=min(medians[np.isfinite(medians)].max(), np.mean(medians[np.isfinite(medians)]) + 3*np.std(medians[np.isfinite(medians)])))
             except:
@@ -1287,6 +1291,8 @@ class Spectrum():
 
         # Plot the standard deviations
         if value == 'std':
+            ax = plt.gca()  
+            ax.set_facecolor('white')
             pc = plt.pcolormesh(x_vals, y_vals, stds.T, cmap='inferno', alpha=no_points.T, vmax=min(stds[np.isfinite(stds)].max(), np.mean(stds[stds > 0]) + 3*np.std(stds[stds > 0])))
             plt.colorbar(pc)
             plt.title(f'Standard deviation of {label}')
@@ -1309,6 +1315,8 @@ class Spectrum():
                 norm = TwoSlopeNorm(vcenter=0)
             pc = plt.pcolormesh(x_vals, y_vals, medians.T, norm=norm, cmap='seismic', alpha=no_points.T)
             plt.colorbar(pc)
+            ax = plt.gca()  
+            ax.set_facecolor('black')
             plt.title(f'Median of {label}')
             plt.xlabel(f'A/N of line {brightest}')
             plt.ylabel(f'A/N of line {line}')
@@ -1387,7 +1395,7 @@ class Spectrum():
         # Get the points of interest
         ind_int = (self.AoNs_out[lines[0]] < interest_u) * (self.AoNs_out[lines[0]] > interest_l)
         ind_bright = (self.AoNs_out[lines[1]] < bright_u) * (self.AoNs_out[lines[1]] > bright_l)
-        
+
         fig, ax = plt.subplots(2, 1)
         
         label = f'({param}_out - {param}_in)/{param}_in'
@@ -1395,15 +1403,15 @@ class Spectrum():
         fig.supylabel(label)
         fig.supxlabel('A/N')
         
-        ax[0].scatter(self.AoNs_out[lines[0]], array[lines[0]], s=0.5, label='All data')
-        ax[0].scatter(self.AoNs_out[lines[0]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=0.5, label='Data points\nof interest')
+        ax[0].scatter(self.AoNs_out[lines[0]], array[lines[0]], s=2, label='All data')
+        ax[0].scatter(self.AoNs_out[lines[0]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=2, label='Data points\nof interest')
         ax[0].set_ylabel(f'Line {lines[0]}')
         ax[0].set_xlim(xlim)
         ax[0].set_ylim(ylim)
         ax[0].legend()
         
-        ax[1].scatter(self.AoNs_out[lines[1]], array[lines[0]], s=0.5)
-        ax[1].scatter(self.AoNs_out[lines[1]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=0.5)
+        ax[1].scatter(self.AoNs_out[lines[1]], array[lines[1]], s=2)
+        ax[1].scatter(self.AoNs_out[lines[1]][ind_int*ind_bright], array[lines[1]][ind_int*ind_bright], s=2)
         ax[1].set_ylabel(f'Line {lines[1]}')
         ax[1].set_xlim(xlim)
         ax[1].set_ylim(ylim)
@@ -1461,11 +1469,11 @@ class Spectrum():
         param : {'sig', 'vel', 'A', 'flux'}
             Which parameter to check for.
         line : int
-            The line of interest.
+            The line of interest, y-axis.
         value : {'std', 'median'}
             Plot the standard deviations or the medians.
         brightest : int, default=4
-            The brightest line (default corresponds to H alpha in the normal input structure).
+            The brightest line (default corresponds to H alpha in the normal input structure), x-axis.
         step : float, default=1
             The step size for the bins.
         interactive : bool, default=False
@@ -1498,6 +1506,8 @@ class Spectrum():
         x_vals = np.arange(np.floor(min(brightest_AoN)), np.ceil(max(brightest_AoN)), step)
         y_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
         
+        
+        
         mesh = np.meshgrid(x_vals[:-1] + step/2, y_vals[:-1] + step/2)
 
         stds = []
@@ -1519,32 +1529,49 @@ class Spectrum():
         medians = np.reshape(medians, (len(x_vals)-1, len(y_vals)-1))
         
         fig, ax = plt.subplots()
-
+        
         # Plot the standard deviations
         if value == 'std':
+            ax = plt.gca()  
+            ax.set_facecolor('white')
             plt.title(f'Standard deviation of {label}')
-            plt.xlabel(f'A/N of line {brightest}')
-            plt.ylabel(f'A/N of line {line}')
-            # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
-            # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
             plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
-            plt.scatter(mesh[0], mesh[1], s=np.log(no_points.T)**2, c=stds.T, cmap='inferno', vmax=min(stds[np.isfinite(stds)].max(), np.mean(stds[stds > 0]) + 3*np.std(stds[stds > 0])))
-            plt.colorbar()
+            plt.scatter(mesh[0], mesh[1], s=(no_points.T), c=stds.T, cmap='inferno', vmax=min(stds[np.isfinite(stds)].max(), np.mean(stds[stds > 0]) + 3*np.std(stds[stds > 0])))
 
         # Plot the medians
-        elif value == 'median':  
+        elif value == 'median':
+            v_ext = np.max([np.abs(medians[np.isfinite(medians)].max()), np.abs(medians[np.isfinite(medians)].min())])
             try:
-                norm = TwoSlopeNorm(vmin=max(medians[np.isfinite(medians)].min(), np.mean(medians[np.isfinite(medians)]) - 3*np.std(medians[np.isfinite(medians)])), vcenter=0, vmax=min(medians[np.isfinite(medians)].max(), np.mean(medians[np.isfinite(medians)]) + 3*np.std(medians[np.isfinite(medians)])))
+                norm = TwoSlopeNorm(vmin=-v_ext, vcenter=0, vmax=v_ext)
             except:
                 norm = TwoSlopeNorm(vcenter=0)
+            ax = plt.gca()  
+            ax.set_facecolor("black")
             plt.title(f'Median of {label}')
+            plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='w', linestyle=':')
+            plt.scatter(mesh[0], mesh[1], s=(no_points.T), c=medians.T, cmap='coolwarm', norm=norm)
+        
+        if brightest == 4:
+            plt.xlabel(r'A/N of H$\alpha$ line')
+            plt.ylabel(r'A/N of H$\beta$ line')
+        elif brightest == 1:
+            plt.xlabel(r'A/N of [O III] 5006.77 $\AA$ line')
+            plt.ylabel(r'A/N of [O III] 4958.83 $\AA$ line')
+        elif brightest == 5:
+            plt.xlabel(r'A/N of [N II] 6583.34 $\AA$ line')
+            plt.ylabel(r'A/N of [N II] 6547.96 $\AA$ line')
+        elif brightest == 7:
+            plt.xlabel(r'A/N of [S II] 6730.68 $\AA$ line')
+            plt.ylabel(r'A/N of [S II] 6716.31 $\AA$ line')
+        else:
             plt.xlabel(f'A/N of line {brightest}')
             plt.ylabel(f'A/N of line {line}')
-            # plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey')
-            # plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey')
-            plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='k', linestyle=':')
-            plt.scatter(mesh[0], mesh[1], s=np.log(no_points.T)**2, c=medians.T, cmap='coolwarm', norm=norm)
-            plt.colorbar()
+        plt.colorbar()
+        plt.vlines(x_vals, min(y_vals), max(y_vals), color='lightgrey', linestyles='dotted')
+        plt.hlines(y_vals, min(x_vals), max(x_vals), color='lightgrey', linestyles='dotted')
+        plt.xlim([min(x_vals)-0.5, max(x_vals)+0.5])
+        plt.ylim([min(y_vals)-0.5, max(y_vals)+0.5])
+        # plt.savefig(f'scatter_{param}_{value}_{brightest}_{line}.png', dpi=600)
         plt.show()
         
         if interactive == True:
@@ -1559,7 +1586,7 @@ class Spectrum():
                 arr_of_interest = stds
             elif value == 'median':
                 arr_of_interest = medians
-                
+            
             global current_plot, heatmap, scat_size, heatmap_sum
             current_plot = 'scatter size'
             heatmap = False
@@ -1567,4 +1594,3 @@ class Spectrum():
             heatmap_sum = False
             
             fig.canvas.mpl_connect('button_press_event', self.on_click)
-        
