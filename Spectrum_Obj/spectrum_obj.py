@@ -4,6 +4,7 @@ from lmfit.models import Model
 from lmfit import Parameters
 import pickle
 from matplotlib.colors import TwoSlopeNorm
+import matplotlib.colors as colours
 import sys
 import os
 from datetime import datetime
@@ -309,7 +310,12 @@ class Spectrum():
         ----------
         plotting : bool, default=False
             Whether or not to plot the graphs.
-     
+            
+        See Also
+        --------
+        simulation_independent : Generate and fit the synthetic spectrum with all lines treated independently.
+        simulation_false : Generate and fit the synthetic spectrum, randomly choose some lines to remove.
+        
         """
      
         # Initialise
@@ -424,6 +430,101 @@ class Spectrum():
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
 
+    
+    def simulation_independent(self, plotting=False):
+        """
+        Generate and fit the synthetic spectrum with all lines treated independently.
+        
+        Parameters
+        ----------
+        plotting : bool, default=False
+            Whether or not to plot the graphs.
+
+        See Also
+        --------
+        simulation : Generate and fit the synthetic spectrum.   
+        simulation_false : Generate and fit the synthetic spectrum, randomly choose some lines to remove.
+        
+        """
+     
+        # Initialise
+        self.init_model()
+        self.AoNs = np.random.random(self.Nsim) * (self.AoN_max - self.AoN_min) + self.AoN_min
+        for index, AoN in enumerate(self.AoNs):
+            A = np.sqrt(self.bkg) * AoN
+            
+            # Generate Gaussian + Noise data 
+            self.model = background(self.x, self.bkg)
+            
+            # Generate free and doublet lines separately
+            amplitudes = []
+            for (lam, relative_A_l, relative_A_u, vel, sig), i in zip(self.peak_params, range(self.peaks_no)):
+                # If given a range of values choose a random value
+                relative_A = np.random.uniform(relative_A_l, relative_A_u)
+                amplitudes.append(relative_A)
+                self.model += gaussian(self.x, A * relative_A, lam, vel, sig, self.sig_resolution)
+                
+                # Store input data
+                self.As_in[i][index] = A * relative_A
+                self.sig_in[i][index] = sig
+                self.vels_in[i][index] = vel
+                
+            # Generate noise and add it to the model
+            noise = np.random.randn(len(self.x)) * np.sqrt(self.model)
+            y = self.model + noise
+            
+            # Fit with LMfit 
+            pfit = Parameters()
+        
+            # The background level
+            pfit.add('bkg_bkg', value=self.bkg, vary=True)
+            
+            # Setting up parameters for the peaks (g_i)
+            for i in range(self.peaks_no):
+                # These values are fixed either physically or by the instrument
+                pfit.add(f'g{i}_lam_rf', value=self.fit_params[i][0], vary=False)
+                pfit.add(name=f'g{i}_sig_resolution', value=self.sig_resolution, vary=False)
+                
+                # Take initial guess as largest y value in the region +- 100 Angstrom from where it should be based on initial guesses
+                expec_lam = self.fit_params[i][0] *  (1 + self.fit_params[i][3]/c)
+                ind = np.where(np.abs(expec_lam - self.x) <= 100)
+                pfit.add(f'g{i}_A', value=np.max(y[ind]) - np.median(y), min=0, max=np.inf)
+                pfit.add(f'g{i}_vel', value=self.fit_params[i][3])
+                pfit.add(f'g{i}_sig', value=self.fit_params[i][4])
+                
+
+              
+            fit = self.mod.fit(y, pfit, x=self.x)
+            
+            # Save generated data
+            for peak in range(self.peaks_no):
+                self.As_out[peak][index] = fit.params[f'g{peak}_A'].value
+                self.As_unc_out[peak][index] = fit.params[f'g{peak}_A'].stderr
+                self.sig_out[peak][index] = fit.params[f'g{peak}_sig'].value
+                self.sig_unc_out[peak][index] = fit.params[f'g{peak}_sig'].stderr
+                self.vels_out[peak][index] = fit.params[f'g{peak}_vel'].value
+                self.vels_unc_out[peak][index] = fit.params[f'g{peak}_vel'].stderr
+                self.lams_out[peak][index] = fit.params[f'g{peak}_lam_rf'].value
+                self.lams_unc_out[peak][index] = fit.params[f'g{peak}_lam_rf'].stderr
+            
+            self.spectra_mat[index] = y
+            self.model_mat[index] = self.model
+            self.fit_mat[index] = fit.best_fit
+                
+
+            # Plotting
+            if plotting == True:
+                self.plot_spectrum(y, fit.best_fit, self.model)
+        
+        self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
+        self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
+        
+        # Save AoNs
+        for peak in range(self.peaks_no):
+            self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
+            self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
+
+
     def simulation_false(self, plotting=False):
         """
         Generate and fit the synthetic spectrum, randomly choose some lines to remove.
@@ -432,6 +533,12 @@ class Spectrum():
         ----------
         plotting : bool, default=False
             Whether or not to plot the graphs.
+            
+        See Also
+        --------
+        simulation : Generate and fit the synthetic spectrum.
+        simulation_independent : Generate and fit the synthetic spectrum with all lines treated independently.
+        
         """
         
         # Initial variables
@@ -1405,16 +1512,34 @@ class Spectrum():
         
         ax[0].scatter(self.AoNs_out[lines[0]], array[lines[0]], s=2, label='All data')
         ax[0].scatter(self.AoNs_out[lines[0]][ind_int*ind_bright], array[lines[0]][ind_int*ind_bright], s=2, label='Data points\nof interest')
-        ax[0].set_ylabel(f'Line {lines[0]}')
         ax[0].set_xlim(xlim)
         ax[0].set_ylim(ylim)
         ax[0].legend()
         
         ax[1].scatter(self.AoNs_out[lines[1]], array[lines[1]], s=2)
         ax[1].scatter(self.AoNs_out[lines[1]][ind_int*ind_bright], array[lines[1]][ind_int*ind_bright], s=2)
-        ax[1].set_ylabel(f'Line {lines[1]}')
         ax[1].set_xlim(xlim)
         ax[1].set_ylim(ylim)
+        
+        for i in range(len(lines)):
+            if lines[i] == 0:
+                ax[i].set_ylabel(r'H$\beta$')
+            elif lines[i] == 1:
+                ax[i].set_ylabel(r'[O III] 5006.77 $\AA$')
+            elif lines[i] == 2:
+                ax[i].set_ylabel(r'[O III] 4958.83 $\AA$')
+            elif lines[i] == 3:
+                ax[i].set_ylabel(r'[N II] 6547.96 $\AA$')
+            elif lines[i] == 4:
+                ax[i].set_ylabel(r'H$\alpha$')
+            elif lines[i] == 5:
+                ax[i].set_ylabel(r'[N II] 6583.34 $\AA$')
+            elif lines[i] == 6:
+                ax[i].set_ylabel(r'[S II] 6716.31 $\AA$')
+            elif lines[i] == 7:
+                ax[i].set_ylabel(r'[S II] 6730.68 $\AA$')
+            else:
+                ax[i].set_ylabel(f'Line {lines[i]}')
 
         plt.show()
         
@@ -1540,11 +1665,12 @@ class Spectrum():
 
         # Plot the medians
         elif value == 'median':
-            v_ext = np.max([np.abs(medians[np.isfinite(medians)].max()), np.abs(medians[np.isfinite(medians)].min())])
-            try:
-                norm = TwoSlopeNorm(vmin=-v_ext, vcenter=0, vmax=v_ext)
-            except:
-                norm = TwoSlopeNorm(vcenter=0)
+            # v_ext = np.max([np.abs(medians[np.isfinite(medians)].max()), np.abs(medians[np.isfinite(medians)].min())])
+            # try:
+            #     norm = TwoSlopeNorm(vmin=-v_ext, vcenter=0, vmax=v_ext)
+            # except:
+            #     norm = TwoSlopeNorm(vcenter=0)
+            norm = MidpointNormalise(midpoint=0)
             ax = plt.gca()  
             ax.set_facecolor("black")
             plt.title(f'Median of {label}')
@@ -1594,3 +1720,13 @@ class Spectrum():
             heatmap_sum = False
             
             fig.canvas.mpl_connect('button_press_event', self.on_click)
+    
+class MidpointNormalise(colours.Normalize):
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colours.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        v_ext = np.max( [ np.abs(self.vmin), np.abs(self.vmax) ] )
+        x, y = [-v_ext, self.midpoint, v_ext], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
