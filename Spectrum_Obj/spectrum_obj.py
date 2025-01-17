@@ -1670,10 +1670,13 @@ class Spectrum():
             #     norm = TwoSlopeNorm(vmin=-v_ext, vcenter=0, vmax=v_ext)
             # except:
             #     norm = TwoSlopeNorm(vcenter=0)
-            norm = MidpointNormalise(midpoint=0)
+            
+            norm = MidpointNormalise(medians.T, midpoint=0)
             ax = plt.gca()  
             ax.set_facecolor("black")
             plt.title(f'Median of {label}')
+            
+            
             plt.plot(x_vals, x_vals * self.line_ratios[line]/self.line_ratios[brightest], color='w', linestyle=':')
             plt.scatter(mesh[0], mesh[1], s=(no_points.T), c=medians.T, cmap='coolwarm', norm=norm)
         
@@ -1722,11 +1725,16 @@ class Spectrum():
             fig.canvas.mpl_connect('button_press_event', self.on_click)
     
 class MidpointNormalise(colours.Normalize):
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, data, vmin=None, vmax=None, midpoint=None, clip=False):
         self.midpoint = midpoint
+        self.data = data
+        
         colours.Normalize.__init__(self, vmin, vmax, clip)
 
     def __call__(self, value, clip=None):
-        v_ext = np.max( [ np.abs(self.vmin), np.abs(self.vmax) ] )
+        v_ext = np.min([np.max( [ np.abs(self.vmin), np.abs(self.vmax) ] ), self.midpoint + 3*np.nanstd(self.data)])
+
+
         x, y = [-v_ext, self.midpoint, v_ext], [0, 0.5, 1]
+        print(v_ext)
         return np.ma.masked_array(np.interp(value, x, y))

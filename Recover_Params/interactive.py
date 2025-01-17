@@ -20,8 +20,8 @@ spec_a = Spectrum('lines_in.txt', 'fitting.txt', Nsim=10)
 
 # Import the data
 spec_a = Spectrum('lines_in.txt', 'fitting.txt')
-data = spec_a.read_pickle('spectra_data_out_drive_independent.pickle')
-spec_a.read_pickle('spectra_data_out_drive_independent.pickle')
+data = spec_a.read_pickle('spectra_data_out_drive.pickle')
+spec_a.read_pickle('spectra_data_out_drive.pickle')
 data_in = spec_a.pickle_in
 
 spec_a.overwrite_all(data_in)
@@ -32,4 +32,4 @@ spec_a.overwrite_all(data_in)
 
 # spec_a.heatmap_brightest(param='flux', line=0, value='median', text=False, step=1, interactive=True)
 
-spec_a.scatter_size(param='flux', line=0, value='median', step=1, interactive=True)
+spec_a.scatter_size(param='flux', brightest=4, line=0, value='std', step=1, interactive=True)
