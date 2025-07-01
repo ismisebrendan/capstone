@@ -32,4 +32,4 @@ spec_a.overwrite_all(data_in)
 
 # spec_a.heatmap_brightest(param='flux', line=0, value='median', text=False, step=1, interactive=True)
 
-spec_a.scatter_size(param='flux', brightest=4, line=0, value='median', step=1, interactive=True)
+spec_a.scatter_size(param='flux', brightest=4, line=0, value='std', step=1, interactive=True)

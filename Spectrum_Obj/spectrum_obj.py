@@ -248,16 +248,13 @@ class Spectrum():
         
         """
         
-        # dx = self.sig_resolution / self.sig_sampling
-        # nx = int(self.lambda_max - self.lambda_min)
-        # self.x = np.linspace(self.lambda_min, self.lambda_max, nx)
-
-        lam_min = min(p[0] * (1 + p[3]/c) for p in self.peak_params)
-        lam_max = max(p[0] * (1 + p[3]/c) for p in self.peak_params)
-        sig_in = max(p[4] / c * p[0] * (1 + p[4]/c) for p in self.peak_params)
+        # # Create lambda values - go from shortest wavelength - (20 * largest sigma) to longest wavelength + (20 * largest sigma)
+        # lam_min = min(p[0] * (1 + p[3]/c) for p in self.peak_params)
+        # lam_max = max(p[0] * (1 + p[3]/c) for p in self.peak_params)
+        # sig_in = max(p[4] / c * p[0] * (1 + p[4]/c) for p in self.peak_params)
         dx = self.sig_resolution / self.sig_sampling
-        nx = int(2 * (20*sig_in/dx) + 1)
-        self.x = np.linspace(-20 * sig_in + lam_min, 20 * sig_in + lam_max, nx)
+        nx = int(self.lambda_max - self.lambda_min)
+        self.x = np.linspace(self.lambda_min, self.lambda_max, nx)
    
     def gen_arrs(self):
         """
