@@ -49,7 +49,7 @@ def gaussian(x, A, lam_rf, vel, sig, sig_resolution):
     """
     
     lam_obs = lam_rf * (1 + vel/c)
-    sig_intr = sig / c * lam_obs
+    sig_intr = sig / c * lam_obs # Intrinsic sigma
     sig_obs = np.sqrt(sig_intr**2 + sig_resolution**2)
     return A * np.exp(-0.5*(x - lam_obs)**2 / sig_obs**2)
 
