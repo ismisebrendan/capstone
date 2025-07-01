@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import os
 import matplotlib.pyplot as plt
+%matplotlib inline
 
 spec_path = os.path.abspath('../') + '/Spectrum_Obj'
 sys.path.insert(0, spec_path)
