@@ -45,8 +45,8 @@ class Spectrum():
     AoN_max : float, default=10
         The maximum amplitude/noise ratio.
 
-    Methods
-    -------
+    Methods - Generation
+    --------------------
     print_info()
         Print the information about the object.
     get_data()
@@ -55,7 +55,53 @@ class Spectrum():
         Get the line ratios for all the peaks.
     create_bkg()
         Create the array for the background level to the spectrum.
-        
+    gen_arrs()
+        Generate the arrays used to store input and output data.
+    generate()
+        Generate the synthetic spectrum.
+    simulation(plotting=False)
+        Generate and fit the synthetic spectrum.
+    
+    Methods - Analysis
+    ------------------
+    simulation_independent(plotting=False)
+        Generate and fit the synthetic spectrum with all lines treated independently.
+    simulation_false(plotting=False)
+        Generate and fit the synthetic spectrum, randomly choose some lines to remove.
+    output(outfile='peak_data_out.pickle', overwrite=True, raw_data=False)
+        Dump out the input and fitted parameters using pickle, can append to data files containing the same number of peaks.
+    read_pickle(filename)
+        Read data from a pickle file.
+    overwrite_all(data_in)
+        Overwrite all variables with data from a variable. Designed to correspond to the format of that data is output from this object.
+    overwrite(parameter, value)
+        Overwrite a particular parameter for plotting the lines with a new value.
+    find_relative_error(peak=0, param='sig', ind=None)
+        Find the difference between the input and output values of different components.
+    find_not_fit(peak=0, param='sig', ind=None)
+        Count the number of lines in the data that no fit was found for them based on having a very low standard deviation.
+    
+    Methods - Plotting
+    ------------------
+    on_click(event)
+        What to do when clicking interactive plots.
+    plot_spectrum(y, fit, model, interactive=False)
+        Plot a spectrum.
+    plot_spectrum_centre(y, fit, model, centre, ran, interactive=False)
+        Plot spectra centred on certain wavelengths.
+    plot_results(line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], interactive=False, errorbar=False)
+        Plot the difference between the input and output values of different components.
+    heatmap_sum(param, line, value, brightest=4, text=True, step=1, transparency=False, interactive=False)
+        Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
+    heatmap_brightest(param, line, value, brightest=4, text=True, step=1, transparency=False, interactive=False)
+        Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line.
+    plot_slice(lines, param, bright_l, bright_u, interest_l, interest_u, xlim=[-0.2, 11], ylim=[-5, 5], interactive=False)
+        Plot the difference between the input and output values of different components for a certain slice only.
+    plot_slice(lines, param, bright_l, bright_u, interest_l, interest_u, xlim=[-0.2, 11], ylim=[-5, 5], interactive=False)
+        Plot the difference between the input and output values of different components for a certain slice only.
+    scatter_size(param, line, value, brightest=4, step=1, interactive=False)
+        Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
+
     """
     
     def __init__(self, plotting_info_in, fitting_info_in, lambda_min=4700, lambda_max=6800, sig_resolution=0.5, sig_sampling=4.0, bkg=100, Nsim=1000, AoN_min=0, AoN_max=10):     
@@ -209,27 +255,7 @@ class Spectrum():
         dx = self.sig_resolution / self.sig_sampling
         nx = int(self.lambda_max - self.lambda_min)
         self.x = np.linspace(self.lambda_min, self.lambda_max, nx)
-
-    def init_model(self):
-        """
-        Generates the background level of the model.
    
-        """
-        
-        # Prerequesite functions
-        self.create_bkg()
-        self.gen_arrs()
-
-        self.model = background(self.x, self.bkg)
-        gaussian_models = []
-        self.mod = Model(background, prefix='bkg_')
-
-        # Loop through for the number of peaks
-        for i, (lam, relative_A_l, relative_A_u, vel, sig) in enumerate(self.peak_params):
-            gauss = Model(gaussian, prefix=f'g{i}_')
-            self.mod += gauss
-            gaussian_models.append(gauss)
-    
     def gen_arrs(self):
         """
         Generate the arrays used to store input and output data.
@@ -259,6 +285,26 @@ class Spectrum():
         self.model_mat = np.empty((self.Nsim, len(self.x)))
         self.fit_mat = np.empty((self.Nsim, len(self.x)))
     
+    def init_model(self):
+        """
+        Generates the background level of the model.
+   
+        """
+        
+        # Prerequesite functions
+        self.create_bkg()
+        self.gen_arrs()
+
+        self.model = background(self.x, self.bkg)
+        gaussian_models = []
+        self.mod = Model(background, prefix='bkg_')
+
+        # Loop through for the number of peaks
+        for i, (lam, relative_A_l, relative_A_u, vel, sig) in enumerate(self.peak_params):
+            gauss = Model(gaussian, prefix=f'g{i}_')
+            self.mod += gauss
+            gaussian_models.append(gauss)
+
     def generate(self):
         """
         Generate the synthetic spectrum.
@@ -444,7 +490,10 @@ class Spectrum():
         for peak in range(self.peaks_no):
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
-   
+
+# All methods above this point are necessary for the generation and fitting of the spectra
+# Below this point the methods are useful for testing other things and extracting and observing the data
+
     def simulation_independent(self, plotting=False):
         """
         Generate and fit the synthetic spectrum with all lines treated independently.
@@ -676,6 +725,310 @@ class Spectrum():
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
 
+    def output(self, outfile='peak_data_out.pickle', overwrite=True, raw_data=False):
+        """
+        Dump out the input and fitted parameters using pickle, can append to data files containing the same number of peaks.
+
+        Parameters
+        ----------
+        outfile : str, default='peak_data_out.pickle'
+            The name of the file to save the data to.
+        overwrite : bool, default=True
+            Overwrite the file or append to it.
+        raw_data : bool, deafult=False
+            Return the entire spectra, model and fit.
+           
+        """
+        
+        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sig_in, self.sig_out, self.sig_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet, self.sig_resolution, self.sig_sampling]
+        
+        if raw_data == True:
+            data.append(self.spectra_mat)
+            data.append(self.model_mat)
+            data.append(self.fit_mat)
+            
+            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 sig_resolution\n20 sig_sampling\n21 spectra_mat\n22 model_mat\n23 fit_mat\n24 This information'
+        
+        # Don't overwrite an already existing file unless desired
+        if overwrite == False:
+            try:
+                # Try to open the data file if it exists and append the data from this run to it, increasing Nsim as needed, if they are compatible
+                with open(outfile, 'rb') as pickle_file:
+                    in_data = pickle.load(pickle_file)
+                 
+                # Check that same resolutions used in both
+                if in_data[19] == self.sig_resolution and in_data[20] == self.sig_sampling:
+                 
+                    # Concatenate the data
+                    for i in range(len(data)):
+                        if i != 6 and i < 15:
+                            data[i] = np.concatenate((in_data[i].T, data[i].T)).T
+                        
+                        if i >= 21 and i < 24:
+                            data[i] = np.concatenate((in_data[i], data[i]))
+                    
+                    # Increment Nsim
+                    data[17] = data[17] + in_data[17]
+                    
+                    # Add the info
+                    data.append(self.data_info)
+                    
+                    # Save the data
+                    with open(outfile, 'wb') as outfile:
+                        pickle.dump(data, outfile)
+                    outfile.close()
+                
+                else:
+                    # If the data are not compatible then make a new file named based on the current timestamp
+                    dt = datetime.now().strftime("%Y%m%dT%H%M%S")
+                    
+                    print('File not updated: The same sampling and resolutions must be used throughout the file.\nData saved to {dt}-{outfile} instead')
+
+                    outfile = open(f'{dt}-{outfile}', 'wb')
+                    data.append(self.data_info)
+                    
+                    # Write the data
+                    pickle.dump(data, outfile)
+                    outfile.close()
+                
+            except:
+                # Create the file
+                outfile = open(outfile, 'wb')
+                
+                data.append(self.data_info)
+                
+                # Write the data
+                pickle.dump(data, outfile)
+                outfile.close()
+        else:
+            # Create the file
+            outfile = open(outfile, 'wb')
+            
+            data.append(self.data_info)
+        
+            # Write the data
+            pickle.dump(data, outfile)
+            outfile.close()
+    
+    def read_pickle(self, filename):
+        """
+        Read data from a pickle file.
+
+        Parameters
+        ----------
+        filename : str
+            The filename to read.
+    
+        """
+      
+        with open(filename, 'rb') as pickle_file:
+            self.pickle_in = pickle.load(pickle_file)
+    
+    def overwrite_all(self, data_in):
+        """
+        Overwrite all variables with data from a variable. Designed to correspond to the format of that data is output from this object.
+
+        Parameters
+        ----------
+        data_in : array
+            The data with which to overwrite the current variables.
+        
+        See Also
+        --------
+        overwrite : Overwrite a particular parameter for plotting the lines with a new value.
+     
+        """
+        
+        # Overwrite variables
+        self.As_in = data_in[0]
+        self.As_out = data_in[1]
+        self.As_unc_out = data_in[2]
+        self.AoNs = data_in[3]
+        self.AoNs_out = data_in[4]
+        self.AoNs_unc_out = data_in[5]
+        self.lams_in = data_in[6]
+        self.lams_out = data_in[7]
+        self.lams_unc_out = data_in[8]
+        self.sig_in = data_in[9]
+        self.sig_out = data_in[10]
+        self.sig_unc_out = data_in[11]
+        self.vels_in = data_in[12]
+        self.vels_out = data_in[13]
+        self.vels_unc_out = data_in[14]
+        self.peak_params = data_in[15]
+        self.peaks_no = data_in[16]
+        self.Nsim = data_in[17]
+        self.doublet = data_in[18]
+        self.sig_resolution = data_in[19]
+        self.sig_sampling = data_in[20]
+        
+        if len(data_in) == 25:
+            self.spectra_mat = data_in[21]
+            self.model_mat = data_in[22]
+            self.fit_mat = data_in[23]
+        
+        # Calculate fluxes
+        self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
+        self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
+        
+        # Get ratios
+        self.get_line_ratios()
+        
+        # Get x data
+        self.create_bkg()
+
+    def overwrite(self, parameter, value):
+        """
+        Overwrite a particular parameter for plotting the lines with a new value.
+
+        Parameters
+        ----------
+        parameter : int
+            The parameter to overwrite given as the index of the parameter in self.peak_params.
+        value
+            The (list of) values to overwrite with.
+        
+        Indices
+        -------
+        wl,	A_in_l,	A_in_u,	v_in,	sig_in,	free
+        0,  1,      2,      3,     4,      5
+        
+        See Also
+        --------
+        overwrite_all : Overwrite all variables with data from a variable. Designed to correspond to the format of that data is output from this object.
+        
+        """
+
+        for i in range(self.peaks_no):
+            if type(value) == list:
+                self.peak_params[i][parameter] = value[i]
+                self.fit_params[i][parameter] = value[i]
+            else:
+                self.peak_params[i][parameter] = value
+                self.fit_params[i][parameter] = value
+
+    def find_relative_error(self, peak=0, param='sig', ind=None):
+        """
+        Find the difference between the input and output values of different components.
+        
+        Parameters
+        ----------
+        peak : int, default=0
+            Which peak of the spectrum to check for.
+        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
+            Which parameter to check for.
+        ind : array, defualt=None
+            Which specific elements to check, if None checks all.
+            
+        Returns
+        -------
+        arr : array
+            The values of difference between the input and output values of the selected component.
+        std : float
+            The standard deviation of arr.
+        median : float
+            The median of arr.
+   
+        """
+        
+        if param == 'sig':
+            array = (self.sig_out - self.sig_in) / self.sig_in
+        elif param == 'vel':
+            array = (self.vels_out - self.vels_in) / self.vels_in
+        elif param == 'A':
+            array = (self.As_out - self.As_in) / self.As_in
+        elif param == 'flux':
+            array = (self.f_out - self.f_in) / self.f_in
+
+        arr = array[peak]
+        if ind is not None:
+            arr = arr[ind][0]
+        std = np.std(arr)
+        med = np.median(arr)
+        
+        return arr, std, med
+
+    def find_not_fit(self, peak=0, param='sig', ind=None):
+        """
+        Count the number of lines in the data that no fit was found for them based on having a very low standard deviation.
+        
+        Parameters
+        ----------
+        peak : int, default=0
+            Which peak of the spectrum to check for.
+        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
+            Which parameter to check for.
+        ind : array, defualt=None
+            Which specific elements to check, if None checks all.
+        
+        Returns
+        -------
+        close_0 : array
+            The indices where sig_out is close to 0.
+        """
+        
+        # Find where param is close to 0
+        
+        close_0 = np.unique(np.where(np.abs(self.find_relative_error(peak=peak, param=param, ind=ind)[0] + 1) <= 0.01)[0])
+        
+        return close_0
+
+# Below this point all methods have something to do with plotting the data
+
+    def on_click(self, event):
+        """
+        What to do when clicking interactive plots.
+        
+        """
+                
+        x_click, y_click = event.xdata, event.ydata
+        
+        if current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum':
+            # Upper and lower x and y limits
+            global bright_l, bright_u, interest_l, interest_u
+            bright_l = (x_click//step_of_interest) * step_of_interest
+            bright_u = bright_l + step_of_interest
+            interest_l = (y_click//step_of_interest) * step_of_interest
+            interest_u = interest_l + step_of_interest
+        else:
+            closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
+        
+        # Just scatter plots
+        # Scatter to spectrum
+        if event.button == 1 and current_plot == 'results' and event.dblclick == True:
+            plt.close()
+            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
+        # Spectrum back to scatter
+        elif event.button == 3 and current_plot == 'spectrum' and event.dblclick == True and heatmap == False and scat_size == False and heatmap_sum == False:
+            plt.close()
+            self.plot_results(line=line_of_interest, param=param_of_interest, xlim=xlim_of_interest, ylim=ylim_of_interest, interactive=True)
+        # Heatmaps and scatter size plots
+        # Heatmaps/scatter size to scatter or spectrum to scatter
+        elif ((event.button == 1 and (current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum')) or (event.button == 3 and current_plot == 'spectrum')) and event.dblclick == True:
+            plt.close()
+            self.plot_slice([line_of_interest, brightest_of_interest], param_of_interest, bright_l, bright_u, interest_l, interest_u, interactive=True)
+        # Slice to heatmap
+        elif event.button == 3 and current_plot == 'slice' and heatmap == True and event.dblclick == True:
+            plt.close()
+            self.heatmap_brightest(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
+        # Slice to scatter size
+        elif event.button == 3 and current_plot == 'slice' and scat_size == True and event.dblclick == True:
+            plt.close()
+            self.scatter_size(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, step_of_interest, interactive=True)
+        # Slice to heatmap sum
+        elif event.button == 3 and current_plot == 'slice' and heatmap_sum == True and event.dblclick == True:
+            plt.close()
+            self.heatmap_sum(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
+        # Slice to spectrum
+        elif event.button == 1 and current_plot == 'slice' and event.dblclick == True:            
+            if event.inaxes in [axis[0]]:
+                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
+            if event.inaxes in [axis[1]]:
+                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[brightest_of_interest] - x_click)**2 + (arr_of_interest[brightest_of_interest] - y_click)**2))
+            plt.close()
+            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
+            pass
+
     def plot_spectrum(self, y, fit, model, interactive=False):
         """
         Plot a spectrum.
@@ -764,255 +1117,6 @@ class Spectrum():
             
             fig.canvas.mpl_connect('button_press_event', self.on_click)
 
-    def dump(self, matrices=False):
-        """
-        Dump the inputted and fitted parameters to a variable
-        
-        Parameters
-        ----------
-        matrices : bool, deafult=False
-            Return the entire spectra, model and fit.
-        
-        Returns
-        -------
-        data : list
-            The input and output values.
-       
-        """
-        
-        data = [self.As_in, self.As_out, self.As_unc_out, self.AoNs, self.AoNs_out, self.AoNs_unc_out, self.lams_in, self.lams_out, self.lams_unc_out, self.sig_in, self.sig_out, self.sig_unc_out, self.vels_in, self.vels_out, self.vels_unc_out, self.peak_params, self.peaks_no, self.Nsim, self.doublet, self.sig_resolution, self.sig_sampling]
-        
-        if matrices == True:
-            data.append(self.spectra_mat)
-            data.append(self.model_mat)
-            data.append(self.fit_mat)
-            
-            self.data_info = '0  As_in\n1  As_out\n2  As_unc_out\n3  AoNs\n4  AoNs_out\n5  AoNs_unc_out\n6  lams_in\n7  lams_out\n8  lams_unc_out\n9  sig_in\n10 sig_out\n11 sig_unc_out\n12 vels_in\n13 vels_out\n14 vels_unc_out\n15 peak_params\n16 peaks_no\n17 Nsim\n18 doublet\n19 sig_resolution\n20 sig_sampling\n21 spectra_mat\n22 model_mat\n23 fit_mat\n24 This information'
-        
-        return data
-
-    def output(self, outfile='peak_data_out.pickle', overwrite=True, matrices=False):
-        """
-        Dump out the input and fitted parameters using pickle, can append to data files containing the same number of peaks (and ideally the same actual peaks of course).
-
-        Parameters
-        ----------
-        outfile : str, default='peak_data_out.pickle'
-            The name of the file to save the data to.
-        overwrite : bool, default=True
-            Overwrite the file or append to it.
-        matrices : bool, deafult=False
-            Return the entire spectra, model and fit.
-           
-        """
-        
-        data = self.dump(matrices=matrices)
-        
-        if overwrite == False:
-            try:
-                # Try to open the data file if it exists and append the data from this run to it
-                with open(outfile, 'rb') as pickle_file:
-                    in_data = pickle.load(pickle_file)
-                 
-                # Check that same resolutions used in both
-                if in_data[19] == self.sig_resolution and in_data[20] == self.sig_sampling:
-                 
-                    # Concatenate the data
-                    for i in range(len(data)):
-                        if i != 6 and i < 15:
-                            data[i] = np.concatenate((in_data[i].T, data[i].T)).T
-                        
-                        if i >= 21 and i < 24:
-                            data[i] = np.concatenate((in_data[i], data[i]))
-                    
-                    # Increment Nsim
-                    data[17] = data[17] + in_data[17]
-                    
-                    # Add the info
-                    data.append(self.data_info)
-                    
-                    # Save the data
-                    with open(outfile, 'wb') as outfile:
-                        pickle.dump(data, outfile)
-                    outfile.close()
-                
-                else:                    
-                    dt = datetime.now().strftime("%Y%m%dT%H%M%S")
-                    
-                    print('File not updated: The same sampling and resolutions must be used throughout the file.\nData saved to {dt}-{outfile} instead')
-
-                    outfile = open(f'{dt}-{outfile}', 'wb')
-                    data.append(self.data_info)
-                    
-                    # Write the data
-                    pickle.dump(data, outfile)
-                    outfile.close()
-                
-            except:
-                # Create the file
-                outfile = open(outfile, 'wb')
-                
-                data.append(self.data_info)
-                
-                # Write the data
-                pickle.dump(data, outfile)
-                outfile.close()
-        else:
-            # Create the file
-            outfile = open(outfile, 'wb')
-            
-            data.append(self.data_info)
-        
-            # Write the data
-            pickle.dump(data, outfile)
-            outfile.close()
-    
-    def read_pickle(self, filename):
-        """
-        Read data from a pickle file.
-
-        Parameters
-        ----------
-        filename : str
-            The filename to read.
-    
-        """
-      
-        with open(filename, 'rb') as pickle_file:
-            self.pickle_in = pickle.load(pickle_file)
-    
-    def overwrite_all(self, data_in):
-        """
-        Overwrite all variables with data from a variable. Designed to correspond to the format of that data is output from this object.
-        
-        See Also
-        --------
-        overwrite : Overwrite a particular parameter with a new value.
-     
-        """
-        
-        # Overwrite variables
-        self.As_in = data_in[0]
-        self.As_out = data_in[1]
-        self.As_unc_out = data_in[2]
-        self.AoNs = data_in[3]
-        self.AoNs_out = data_in[4]
-        self.AoNs_unc_out = data_in[5]
-        self.lams_in = data_in[6]
-        self.lams_out = data_in[7]
-        self.lams_unc_out = data_in[8]
-        self.sig_in = data_in[9]
-        self.sig_out = data_in[10]
-        self.sig_unc_out = data_in[11]
-        self.vels_in = data_in[12]
-        self.vels_out = data_in[13]
-        self.vels_unc_out = data_in[14]
-        self.peak_params = data_in[15]
-        self.peaks_no = data_in[16]
-        self.Nsim = data_in[17]
-        self.doublet = data_in[18]
-        self.sig_resolution = data_in[19]
-        self.sig_sampling = data_in[20]
-        
-        if len(data_in) == 25:
-            self.spectra_mat = data_in[21]
-            self.model_mat = data_in[22]
-            self.fit_mat = data_in[23]
-        
-        # Calculate fluxes
-        self.f_out, self.f_unc_out = flux(self.As_out, self.sig_out, self.As_unc_out, self.sig_unc_out)
-        self.f_in, self.f_unc_in = flux(self.As_in, self.sig_in)
-        
-        # Get ratios
-        self.get_line_ratios()
-        
-        # Get x data
-        self.create_bkg()
-
-    def overwrite(self, parameter, value):
-        """
-        Overwrite a particular parameter with a new value.
-
-        Parameters
-        ----------
-        parameter : int
-            The parameter to overwrite given as the index of the parameter in self.peak_params.
-        value
-            The (list of) values to overwrite with.
-        
-        Indices
-        -------
-        wl,	A_in_l,	A_in_u,	v_in,	sig_in,	free
-        0,  1,      2,      3,     4,      5
-        
-        See Also
-        --------
-        overwrite_all : Overwrite all variables with data from a variable. Designed to correspond to the format of that data is output from this object.
-        
-        """
-
-        for i in range(self.peaks_no):
-            if type(value) == list:
-                self.peak_params[i][parameter] = value[i]
-                self.fit_params[i][parameter] = value[i]
-            else:
-                self.peak_params[i][parameter] = value
-                self.fit_params[i][parameter] = value
-    
-    def on_click(self, event):
-        """
-        What to do when clicking interactive plots.
-        
-        """
-                
-        x_click, y_click = event.xdata, event.ydata
-        
-        if current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum':
-            # Upper and lower x and y limits
-            global bright_l, bright_u, interest_l, interest_u
-            bright_l = (x_click//step_of_interest) * step_of_interest
-            bright_u = bright_l + step_of_interest
-            interest_l = (y_click//step_of_interest) * step_of_interest
-            interest_u = interest_l + step_of_interest
-        else:
-            closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
-        
-        # Just scatter plots
-        # Scatter to spectrum
-        if event.button == 1 and current_plot == 'results' and event.dblclick == True:
-            plt.close()
-            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
-        # Spectrum back to scatter
-        elif event.button == 3 and current_plot == 'spectrum' and event.dblclick == True and heatmap == False and scat_size == False and heatmap_sum == False:
-            plt.close()
-            self.plot_results(line=line_of_interest, param=param_of_interest, xlim=xlim_of_interest, ylim=ylim_of_interest, interactive=True)
-        # Heatmaps and scatter size plots
-        # Heatmaps/scatter size to scatter or spectrum to scatter
-        elif ((event.button == 1 and (current_plot == 'heatmap' or current_plot == 'scatter size' or current_plot == 'heatmap sum')) or (event.button == 3 and current_plot == 'spectrum')) and event.dblclick == True:
-            plt.close()
-            self.plot_slice([line_of_interest, brightest_of_interest], param_of_interest, bright_l, bright_u, interest_l, interest_u, interactive=True)
-        # Slice to heatmap
-        elif event.button == 3 and current_plot == 'slice' and heatmap == True and event.dblclick == True:
-            plt.close()
-            self.heatmap_brightest(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
-        # Slice to scatter size
-        elif event.button == 3 and current_plot == 'slice' and scat_size == True and event.dblclick == True:
-            plt.close()
-            self.scatter_size(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, step_of_interest, interactive=True)
-        # Slice to heatmap sum
-        elif event.button == 3 and current_plot == 'slice' and heatmap_sum == True and event.dblclick == True:
-            plt.close()
-            self.heatmap_sum(param_of_interest, line_of_interest, value_of_interest, brightest_of_interest, show_text, step_of_interest, transparent, interactive=True)
-        # Slice to spectrum
-        elif event.button == 1 and current_plot == 'slice' and event.dblclick == True:            
-            if event.inaxes in [axis[0]]:
-                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[line_of_interest] - x_click)**2 + (arr_of_interest[line_of_interest] - y_click)**2))
-            if event.inaxes in [axis[1]]:
-                closest_point_ind = np.argmin(np.sqrt((self.AoNs_out[brightest_of_interest] - x_click)**2 + (arr_of_interest[brightest_of_interest] - y_click)**2))
-            plt.close()
-            self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
-            pass
-          
     def plot_results(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], interactive=False, errorbar=False):
         """
         Plot the difference between the input and output values of different components.
@@ -1080,110 +1184,7 @@ class Spectrum():
             heatmap_sum = False
             
             fig.canvas.mpl_connect('button_press_event', self.on_click)
-
-    def plot_results_density(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], step=1):
-        """
-        Plot the difference between the input and output values of different components.
-        
-        Parameters
-        ----------
-        line : int, default=0
-            Which line of the spectrum to plot for.
-        param : {'sig', 'vel', 'A', 'flux'}
-            Which parameter to plot for. 
-        xlim : array or None, default=[-0.2,11]
-            The xlimits of the plot.
-        ylim : array or None, default=[-5,5]
-            The ylimits of the plot.
-        step : float, default=1
-            The step size for the bins.
-            
-        """
- 
-        if param == 'sig':
-            array = (self.sig_out - self.sig_in) / self.sig_in
-        elif param == 'vel':
-            array = (self.vels_out - self.vels_in) / self.vels_in
-        elif param == 'A':
-            array = (self.As_out - self.As_in) / self.As_in
-        elif param == 'flux':
-            array = (self.f_out - self.f_in) / self.f_in
-        
-        # Check for outliers in the output A/N of all lines (keep within AoN max + 2) and filter accordingly
-        # Where AoN <= 12, gives array of all 2D indices that have this. Remove any index that doesn't appear 8 times (peaks_no times)
-        ind = np.where(np.unique(np.argwhere(self.AoNs_out < 12)[:,1], return_counts=True)[1] == self.peaks_no)[0]
                 
-        interest_array = array[line][ind]
-        interest_AoN = self.AoNs_out[line][ind]
-        
-        # Also keep d[param]/[param] between -5 and 5
-        ind = np.where(np.abs(interest_array) <=5)
-        
-        interest_array = interest_array[ind]
-        interest_AoN = interest_AoN[ind]
-        
-        x_vals = np.arange(np.floor(min(interest_AoN)), np.ceil(max(interest_AoN)), step)
-        y_vals = np.arange(np.floor(min(interest_array)), np.ceil(max(interest_array)), step)
-        
-        no_points = np.empty((len(x_vals) - 1, len(y_vals) - 1))
-
-        for i in range(1, len(x_vals)):
-            ind_x = (interest_AoN < x_vals[i]) * (interest_AoN > x_vals[i] - step)
-
-            for j in range(1, len(y_vals)):
-                ind_y = (interest_array < y_vals[j]) * (interest_array > y_vals[j] - step)
-                
-                no_points[i-1][j-1] = len(interest_AoN[ind_y*ind_x])
-                
-        label = f'({param}_out - {param}_in)/{param}_in'
-        plt.title(rf'{label} against A/N of peak {line} for Nsim = {self.Nsim}'+f'\nv_in = {self.peak_params[0][3]}, sig_in = {self.peak_params[0][4]}')
-        pc = plt.pcolormesh(x_vals, y_vals, no_points.T, cmap='plasma', vmax=min(no_points.max(), np.mean(no_points[no_points > 0]) + 3*np.std(no_points[no_points > 0])))
-        plt.colorbar(pc)
-        plt.xlabel('A/N')
-        plt.ylabel(label)
-        plt.show()
-                
-    def recover_data(self, peak=0, param='sig', ind=None):
-        """
-        Find the difference between the input and output values of different components.
-        
-        Parameters
-        ----------
-        peak : int, default=0
-            Which peak of the spectrum to check for.
-        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
-            Which parameter to check for.
-        ind : array, defualt=None
-            Which specific elements to check, if None checks all.
-            
-        Returns
-        -------
-        arr : array
-            The values of difference between the input and output values of the selected component.
-        std : float
-            The standard deviation of arr.
-        median : float
-            The median of arr.
-   
-        """
-        
-        if param == 'sig':
-            array = (self.sig_out - self.sig_in) / self.sig_in
-        elif param == 'vel':
-            array = (self.vels_out - self.vels_in) / self.vels_in
-        elif param == 'A':
-            array = (self.As_out - self.As_in) / self.As_in
-        elif param == 'flux':
-            array = (self.f_out - self.f_in) / self.f_in
-
-        arr = array[peak]
-        if ind is not None:
-            arr = arr[ind][0]
-        std = np.std(arr)
-        med = np.median(arr)
-        
-        return arr, std, med
-
     def heatmap_sum(self, param, line, value, brightest=4, text=True, step=1, transparency=False, interactive=False):
         """
         Generate heatmaps for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the sum of the A/N of all lines.
@@ -1225,7 +1226,7 @@ class Spectrum():
         
         interest_AoN = self.AoNs_out[line][ind]
         sum_AoN = np.sum(self.AoNs_out[:,ind], axis=0)
-        interest_val = self.recover_data(peak=line, param=param)[0][ind]
+        interest_val = self.find_relative_error(peak=line, param=param)[0][ind]
     
         interest_AoN = np.delete(interest_AoN, close_0)
         sum_AoN = np.delete(sum_AoN, close_0)
@@ -1367,7 +1368,7 @@ class Spectrum():
         
         interest_AoN = self.AoNs_out[line][ind]
         brightest_AoN = self.AoNs_out[brightest][ind]
-        interest_val = self.recover_data(peak=line, param=param)[0][ind]
+        interest_val = self.find_relative_error(peak=line, param=param)[0][ind]
     
         interest_AoN = np.delete(interest_AoN, close_0)
         brightest_AoN = np.delete(brightest_AoN, close_0)
@@ -1565,33 +1566,7 @@ class Spectrum():
             axis = ax
             
             fig.canvas.mpl_connect('button_press_event', self.on_click)
-
-    def find_not_fit(self, peak=0, param='sig', ind=None):
-        """
-        Count the number of lines in the data that no fit was found for them based on having a very low standard deviation.
-        
-        Parameters
-        ----------
-        peak : int, default=0
-            Which peak of the spectrum to check for.
-        param : {'sig', 'vel', 'A', 'flux'}, default='sig'
-            Which parameter to check for.
-        ind : array, defualt=None
-            Which specific elements to check, if None checks all.
-        
-        Returns
-        -------
-        close_0 : array
-            The indices where sig_out is close to 0.
-        """
-        
-        # Find where param is close to 0
-        
-        close_0 = np.unique(np.where(np.abs(self.recover_data(peak=peak, param=param, ind=ind)[0] + 1) <= 0.01)[0])
-        
-        return close_0
-        
-        
+              
     def scatter_size(self, param, line, value, brightest=4, step=1, interactive=False):
         """
         Generate scatter plots for the standarad deviation and medians of the difference between input and output values for the line of interest and plot against the A/N of the brightest line with the size of the points depending on the number of data points in this range.
@@ -1629,7 +1604,7 @@ class Spectrum():
         
         interest_AoN = self.AoNs_out[line][ind]
         brightest_AoN = self.AoNs_out[brightest][ind]
-        interest_val = self.recover_data(peak=line, param=param)[0][ind]
+        interest_val = self.find_relative_error(peak=line, param=param)[0][ind]
     
         interest_AoN = np.delete(interest_AoN, close_0)
         brightest_AoN = np.delete(brightest_AoN, close_0)
