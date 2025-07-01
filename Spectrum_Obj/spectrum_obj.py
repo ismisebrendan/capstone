@@ -695,8 +695,7 @@ class Spectrum():
         if self.target_type != None:
             plt.title(f'Generated and fit spectrum with emission lines of {self.target_type}')
         else:
-            # plt.title('Generated and fit spectrum with emission lines')
-            plt.title('One of the spectra used in this project')
+            plt.title('Generated and fit spectrum with emission lines')
         plt.legend(labels)
         plt.grid()
         plt.show()
