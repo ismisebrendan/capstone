@@ -24,9 +24,9 @@ class Spectrum():
 
     Parameters
     ----------
-    plotting_info_in : str
+    peaksdata : str
         The input filename with peak generating data.
-    fitting_info_in : str
+    fitdata : str
         The input filename with peak fitting data.
     lambda_min : int, default=4700
         The minimum wavelength to plot in Angstrom.
@@ -44,23 +44,14 @@ class Spectrum():
         The minimum amplitude/nose ratio.
     AoN_max : float, default=10
         The maximum amplitude/noise ratio.
-
-    Methods
-    -------
-    print_info()
-        Print the information about the object.
-    get_data()
-        Take the input text files and extract the data from them.
-    get_line_ratios()
-        Get the line ratios for all the peaks.
-    create_bkg()
-        Create the array for the background level to the spectrum.
-        
+    target_type : str, default=None
+        The type of body that the spectra are from.
+    
     """
     
-    def __init__(self, plotting_info_in, fitting_info_in, lambda_min=4700, lambda_max=6800, sig_resolution=0.5, sig_sampling=4.0, bkg=100, Nsim=1000, AoN_min=0, AoN_max=10):     
-        self.plotting_info_in = plotting_info_in
-        self.fitting_info_in = fitting_info_in
+    def __init__(self, peaksdata, fitdata, lambda_min=4700, lambda_max=6800, sig_resolution=0.5, sig_sampling=4.0, bkg=100, Nsim=1000, AoN_min=0, AoN_max=10, target_type=None):
+        self.peaksdata = peaksdata
+        self.fitdata = fitdata
         self.lambda_min = lambda_min
         self.lambda_max = lambda_max
         self.sig_resolution = sig_resolution
@@ -69,6 +60,7 @@ class Spectrum():
         self.Nsim = Nsim
         self.AoN_min = AoN_min
         self.AoN_max = AoN_max
+        self.target_type = target_type
         
         self.peak_params = []
         self.fit_params = []
@@ -90,6 +82,7 @@ class Spectrum():
         """
         
         print('Spectrum object, generates and fits synthetic spectra from files.')
+        print(f'Type of object: {self.target_type}')
         print('----------------')
         print('Input parameters')
         print(f'\t- sig_resolution: {self.sig_resolution}')
@@ -113,8 +106,8 @@ class Spectrum():
         self.peaks_no = 0
         
         # Plotting file
-        # plotting_info_in refers to lines_in.txt - initial input spectrum / peaks setup
-        with open(self.plotting_info_in) as f:
+        # peaksdata refers to lines_in.txt - initial input spectrum / peaks setup
+        with open(self.peaksdata) as f:
             data_in = f.readlines()
             
             for i in range(1, len(data_in)):
@@ -134,8 +127,8 @@ class Spectrum():
         self.peaks_no = len(self.peak_params)
 
         # Fitting file
-        # fitting_info_in refers to fitting.txt - initial input spectrum / peaks setup
-        with open(self.fitting_info_in) as f:
+        # fitdata refers to fitting.txt - initial input spectrum / peaks setup
+        with open(self.fitdata) as f:
             data_fit = f.readlines()
             
             for i in range(1, len(data_fit)):
@@ -172,7 +165,7 @@ class Spectrum():
                             self.vel_dep.append(int(entry_fit[7][1:]))
                             self.prof_dep.append(int(entry_fit[7][1:]))
         
-        # Give the lines the same velocity and sigma as the lines they are dependent on, i.e. ignore velocity and sigma inputs for lines that are dependent on others
+        # Give the lines the same velocity and sigma as the lines they are dependent on
         for i in range(self.peaks_no - 1):
             self.peak_params[i][3] = self.peak_params[self.doublet[i]][3]
             self.peak_params[i][4] = self.peak_params[self.doublet[i]][4]
@@ -182,7 +175,7 @@ class Spectrum():
             self.fit_params[i][3] = self.fit_params[self.vel_dep[i]][3]
             self.fit_params[i][4] = self.fit_params[self.prof_dep[i]][4]
         
-        self.get_line_ratios()
+        self.get_line_ratios
     
     def get_line_ratios(self):
         """
@@ -705,8 +698,11 @@ class Spectrum():
         plt.plot(self.x, fit, 'r-')
         plt.xlabel(r'$\lambda$ ($\AA$)')
         plt.ylabel('Amplitude (arbitrary units)')
-        # plt.title('Generated and fit spectrum with emission lines')
-        plt.title('One of the spectra used in this project')
+        if self.target_type != None:
+            plt.title(f'Generated and fit spectrum with emission lines of {self.target_type}')
+        else:
+            # plt.title('Generated and fit spectrum with emission lines')
+            plt.title('One of the spectra used in this project')
         plt.legend(labels)
         plt.grid()
         plt.show()
@@ -755,7 +751,10 @@ class Spectrum():
             
         ax[0].set_ylabel('Amplitude (arbitrary units)')
         ax[0].legend(labels)
-        fig.suptitle('Generated and fit spectrum with emission lines')
+        if self.target_type != None:
+            fig.suptitle(f'Generated and fit spectrum with emission lines of {self.target_type}')
+        else:
+            fig.suptitle('Generated and fit spectrum with emission lines')
         plt.show()
         
         if interactive == True:
@@ -1012,7 +1011,8 @@ class Spectrum():
             plt.close()
             self.plot_spectrum_centre(self.spectra_mat[closest_point_ind], self.fit_mat[closest_point_ind], self.model_mat[closest_point_ind], [4950, 6650], 150, interactive=True)
             pass
-          
+
+            
     def plot_results(self, line=0, param='sig', xlim=[-0.2, 11], ylim=[-5, 5], interactive=False, errorbar=False):
         """
         Plot the difference between the input and output values of different components.
