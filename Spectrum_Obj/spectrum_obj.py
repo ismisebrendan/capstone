@@ -28,6 +28,10 @@ class Spectrum():
         The input filename with peak generating data.
     fitdata : str
         The input filename with peak fitting data.
+    lambda_min : int, default=4700
+        The minimum wavelength to plot in Angstrom.
+    lambda_max : int, default=6800
+        The maximum wavelength to plot in Angstrom.
     sig_resolution : float, default=0.5
         The resolution of the hypothetical spectroscopic system.
     sig_sampling : float, default=4.0
@@ -45,9 +49,11 @@ class Spectrum():
     
     """
     
-    def __init__(self, peaksdata, fitdata, sig_resolution=0.5, sig_sampling=4.0, bkg=100, Nsim=1000, AoN_min=0, AoN_max=10, target_type=None):
+    def __init__(self, peaksdata, fitdata, lambda_min=4700, lambda_max=6800, sig_resolution=0.5, sig_sampling=4.0, bkg=100, Nsim=1000, AoN_min=0, AoN_max=10, target_type=None):
         self.peaksdata = peaksdata
         self.fitdata = fitdata
+        self.lambda_min = lambda_min
+        self.lambda_max = lambda_max
         self.sig_resolution = sig_resolution
         self.sig_sampling = sig_sampling
         self.bkg = bkg
@@ -88,7 +94,7 @@ class Spectrum():
 
     def get_data(self):
         """
-        Take the input files and extract the data from them.
+        Take the input text files and extract the data from them.
         
         """
         
@@ -100,6 +106,7 @@ class Spectrum():
         self.peaks_no = 0
         
         # Plotting file
+        # peaksdata refers to lines_in.txt - initial input spectrum / peaks setup
         with open(self.peaksdata) as f:
             data_in = f.readlines()
             
@@ -119,7 +126,8 @@ class Spectrum():
         # How many peaks
         self.peaks_no = len(self.peak_params)
 
-        # Fitting data
+        # Fitting file
+        # fitdata refers to fitting.txt - initial input spectrum / peaks setup
         with open(self.fitdata) as f:
             data_fit = f.readlines()
             
@@ -187,13 +195,13 @@ class Spectrum():
         
         """
         
-        # Create lambda values - go from shortest wavelength - (20 * largest sigma) to longest wavelength + (20 * largest sigma)
-        lam_min = min(p[0] * (1 + p[3]/c) for p in self.peak_params)
-        lam_max = max(p[0] * (1 + p[3]/c) for p in self.peak_params)
-        sig_in = max(p[4] / c * p[0] * (1 + p[4]/c) for p in self.peak_params)
+        # # Create lambda values - go from shortest wavelength - (20 * largest sigma) to longest wavelength + (20 * largest sigma)
+        # lam_min = min(p[0] * (1 + p[3]/c) for p in self.peak_params)
+        # lam_max = max(p[0] * (1 + p[3]/c) for p in self.peak_params)
+        # sig_in = max(p[4] / c * p[0] * (1 + p[4]/c) for p in self.peak_params)
         dx = self.sig_resolution / self.sig_sampling
-        nx = int(2 * (20*sig_in/dx) + 1)
-        self.x = np.linspace(-20 * sig_in + lam_min, 20 * sig_in + lam_max, nx)
+        nx = int(self.lambda_max - self.lambda_min)
+        self.x = np.linspace(self.lambda_min, self.lambda_max, nx)
 
     def init_model(self):
         """
@@ -429,8 +437,7 @@ class Spectrum():
         for peak in range(self.peaks_no):
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
-
-    
+   
     def simulation_independent(self, plotting=False):
         """
         Generate and fit the synthetic spectrum with all lines treated independently.
@@ -523,7 +530,6 @@ class Spectrum():
         for peak in range(self.peaks_no):
             self.AoNs_out[peak] = self.As_out[peak]/np.sqrt(self.bkg)
             self.AoNs_unc_out[peak] = self.As_unc_out[peak]/np.sqrt(self.bkg)
-
 
     def simulation_false(self, plotting=False):
         """
